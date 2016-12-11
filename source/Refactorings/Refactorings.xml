@@ -1012,6 +1012,11 @@
       <Syntax>selected attribute list</Syntax>
     </Syntaxes>
   </Refactoring>
+  <Refactoring Id="SplitIfElse" Title="Split if-else" ExtensionVersion="0.0.0">
+    <Syntaxes>
+      <Syntax>if-else</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="SplitSwitchLabels" Title="Split switch labels" ExtensionVersion="1.1.8">
     <Syntaxes>
       <Syntax>selected switch labels</Syntax>

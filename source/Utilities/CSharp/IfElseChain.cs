@@ -37,6 +37,14 @@ namespace Roslynator.CSharp
                 yield return ifStatement.Else;
         }
 
+        public static bool ContainsElseIf(IfStatementSyntax ifStatement)
+        {
+            return ifStatement
+                .Else?
+                .Statement?
+                .IsKind(SyntaxKind.IfStatement) == true;
+        }
+
         public static IfStatementSyntax GetTopmostIf(ElseClauseSyntax elseClause)
         {
             if (elseClause == null)

@@ -165,6 +165,7 @@ namespace Roslynator.VisualStudio
             ReverseForLoop = true;
             SimplifyLambdaExpression = true;
             SplitAttributes = true;
+            SplitIfElse = true;
             SplitSwitchLabels = true;
             SplitVariableDeclaration = true;
             SwapExpressionsInBinaryExpression = true;
@@ -335,6 +336,7 @@ namespace Roslynator.VisualStudio
             SetIsEnabled(RefactoringIdentifiers.ReverseForLoop, ReverseForLoop);
             SetIsEnabled(RefactoringIdentifiers.SimplifyLambdaExpression, SimplifyLambdaExpression);
             SetIsEnabled(RefactoringIdentifiers.SplitAttributes, SplitAttributes);
+            SetIsEnabled(RefactoringIdentifiers.SplitIfElse, SplitIfElse);
             SetIsEnabled(RefactoringIdentifiers.SplitSwitchLabels, SplitSwitchLabels);
             SetIsEnabled(RefactoringIdentifiers.SplitVariableDeclaration, SplitVariableDeclaration);
             SetIsEnabled(RefactoringIdentifiers.SwapExpressionsInBinaryExpression, SwapExpressionsInBinaryExpression);
@@ -1875,6 +1877,16 @@ namespace Roslynator.VisualStudio
         [Description("Syntax: selected attribute list")]
         [TypeConverter(typeof (EnabledDisabledConverter))]
         public bool SplitAttributes
+        {
+            get;
+            set;
+        }
+
+        [Category(RefactoringCategory)]
+        [DisplayName("Split if-else")]
+        [Description("Syntax: if-else")]
+        [TypeConverter(typeof (EnabledDisabledConverter))]
+        public bool SplitIfElse
         {
             get;
             set;
