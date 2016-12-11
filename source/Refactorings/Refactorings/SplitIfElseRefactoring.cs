@@ -1,7 +1,6 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,24 +13,14 @@ namespace Roslynator.CSharp.Refactorings
 {
     internal static class SplitIfElseRefactoring
     {
-        public static void ComputeRefactoring(RefactoringContext context, SelectedStatementsInfo info)
+        public static void ComputeRefactoring(RefactoringContext context, IfStatementSyntax ifStatement)
         {
-            if (info.IsSingleSelected)
+            if (IfElseChain.IsTopmostIf(ifStatement)
+                && IfElseChain.ContainsElseIf(ifStatement))
             {
-                StatementSyntax statement = info.FirstSelectedNode;
-
-                if (statement.IsKind(SyntaxKind.IfStatement))
-                {
-                    var ifStatement = (IfStatementSyntax)statement;
-
-                    if (IfElseChain.IsTopmostIf(ifStatement)
-                        && IfElseChain.ContainsElseIf(ifStatement))
-                    {
-                        context.RegisterRefactoring(
-                            "Split if-else",
-                            cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
-                    }
-                }
+                context.RegisterRefactoring(
+                    "Split if-else",
+                    cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
             }
         }
 

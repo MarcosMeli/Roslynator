@@ -16,8 +16,7 @@ namespace Roslynator.CSharp.Refactorings
                 || context.IsRefactoringEnabled(RefactoringIdentifiers.WrapInCondition)
                 || context.IsRefactoringEnabled(RefactoringIdentifiers.WrapInTryCatch)
                 || context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithSwitch)
-                || context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfStatementWithReturnStatement)
-                || context.IsRefactoringEnabled(RefactoringIdentifiers.SplitIfElse);
+                || context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfStatementWithReturnStatement);
         }
 
         public static async Task ComputeRefactoringAsync(RefactoringContext context, SelectedStatementsInfo info)
@@ -38,9 +37,6 @@ namespace Roslynator.CSharp.Refactorings
 
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithSwitch))
                     ReplaceIfElseWithSwitchRefactoring.ComputeRefactoring(context, info);
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.SplitIfElse))
-                    SplitIfElseRefactoring.ComputeRefactoring(context, info);
 
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfStatementWithReturnStatement))
                     ReplaceIfStatementWithReturnStatementRefactoring.ComputeRefactoring(context, info);
