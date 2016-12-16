@@ -6,10 +6,20 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class SwapStatementInIfElseRefactoring
     {
+        public static void ComputeRefactoring(RefactoringContext context, IfStatementSyntax ifStatement)
+        {
+            if (CanRefactor(ifStatement))
+            {
+                context.RegisterRefactoring(
+                    "Swap statements in if-else",
+                    cancellationToken => RefactorAsync(context.Document, ifStatement, cancellationToken));
+            }
+        }
+
         public static bool CanRefactor(IfStatementSyntax ifStatement)
         {
             if (ifStatement.Condition != null
@@ -32,21 +42,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             IfStatementSyntax ifStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             StatementSyntax trueStatement = ifStatement.Statement;
 
             StatementSyntax falseStatement = ifStatement.Else.Statement;
 
             IfStatementSyntax newIfStatement = ifStatement
-                .WithCondition(ifStatement.Condition.Negate())
+                .WithCondition(ifStatement.Condition.LogicallyNegate())
                 .WithStatement(falseStatement.WithTriviaFrom(trueStatement))
                 .WithElse(ifStatement.Else.WithStatement(trueStatement.WithTriviaFrom(falseStatement)))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(ifStatement, newIfStatement);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(ifStatement, newIfStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

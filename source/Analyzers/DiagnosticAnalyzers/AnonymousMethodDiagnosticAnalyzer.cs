@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AnonymousMethodDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -21,6 +21,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
                   DiagnosticDescriptors.ReplaceAnonymousMethodWithLambdaExpression,
                   DiagnosticDescriptors.ReplaceAnonymousMethodWithLambdaExpressionFadeOut);
             }
+        }
+
+        private static DiagnosticDescriptor DiagnosticDescriptor
+        {
+            get { return DiagnosticDescriptors.ReplaceAnonymousMethodWithLambdaExpressionFadeOut; }
         }
 
         public override void Initialize(AnalysisContext context)
@@ -42,7 +47,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             {
                 context.ReportDiagnostic(
                     DiagnosticDescriptors.ReplaceAnonymousMethodWithLambdaExpression,
-                    context.Node.GetLocation());
+                    anonymousMethod.GetLocation());
 
                 FadeOut(context, anonymousMethod);
             }
@@ -50,22 +55,23 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
         private static void FadeOut(SyntaxNodeAnalysisContext context, AnonymousMethodExpressionSyntax anonymousMethod)
         {
-            DiagnosticDescriptor descriptor = DiagnosticDescriptors.ReplaceAnonymousMethodWithLambdaExpressionFadeOut;
-
-            context.FadeOutToken(descriptor, anonymousMethod.DelegateKeyword);
+            context.FadeOutToken(DiagnosticDescriptor, anonymousMethod.DelegateKeyword);
 
             BlockSyntax block = anonymousMethod.Block;
 
-            if (block.Statements.Count == 1 && block.IsSingleLine())
+            SyntaxList<StatementSyntax> statements = block.Statements;
+
+            if (statements.Count == 1
+                && block.IsSingleLine())
             {
-                StatementSyntax statement = block.Statements[0];
+                StatementSyntax statement = statements[0];
 
                 if (statement.IsKind(SyntaxKind.ReturnStatement, SyntaxKind.ExpressionStatement))
                 {
-                    context.FadeOutBraces(descriptor, block);
+                    context.FadeOutBraces(DiagnosticDescriptor, block);
 
                     if (statement.IsKind(SyntaxKind.ReturnStatement))
-                        context.FadeOutToken(descriptor, ((ReturnStatementSyntax)statement).ReturnKeyword);
+                        context.FadeOutToken(DiagnosticDescriptor, ((ReturnStatementSyntax)statement).ReturnKeyword);
                 }
             }
         }

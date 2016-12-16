@@ -6,8 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class IdentifierNameDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -32,28 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var identifierName = (IdentifierNameSyntax)context.Node;
 
-            if (!identifierName.IsVar
-                && !identifierName.IsParentKind(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    SyntaxKind.QualifiedName,
-                    SyntaxKind.UsingDirective))
-            {
-                var namedTypeSymbol = context.SemanticModel
-                    .GetSymbolInfo(identifierName, context.CancellationToken)
-                    .Symbol as INamedTypeSymbol;
-
-                if (namedTypeSymbol?.IsPredefinedType() == true)
-                {
-                    IAliasSymbol aliasSymbol = context.SemanticModel.GetAliasInfo(identifierName, context.CancellationToken);
-
-                    if (aliasSymbol == null)
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.UsePredefinedType,
-                            identifierName.GetLocation());
-                    }
-                }
-            }
+            UsePredefinedTypeRefactoring.Analyze(context, identifierName);
         }
     }
 }

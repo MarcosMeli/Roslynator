@@ -1,12 +1,9 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class CommentTriviaRefactoring
     {
@@ -14,7 +11,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             SyntaxKind kind = trivia.Kind();
 
-            if (context.Root.IsKind(SyntaxKind.CompilationUnit)
+            if (context.IsRootCompilationUnit
                 && trivia.FullSpan.Contains(context.Span)
                 && IsComment(kind))
             {
@@ -22,14 +19,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove comment",
-                        c => RemoveCommentRefactoring.RemoveCommentAsync(context.Document, trivia, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentAsync(context.Document, trivia, cancellationToken));
                 }
 
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllComments))
                 {
                     context.RegisterRefactoring(
                         "Remove all comments",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.All, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.All, cancellationToken));
                 }
 
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllCommentsExceptDocumentationComments)
@@ -37,7 +34,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove all comments (except documentation comments)",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.AllExceptDocumentation, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.AllExceptDocumentation, cancellationToken));
                 }
 
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllDocumentationComments)
@@ -45,7 +42,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove all documentation comments",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.Documentation, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.Documentation, cancellationToken));
                 }
             }
         }
@@ -90,7 +87,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove comments",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.All, context.Span, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.All, context.Span, cancellationToken));
                 }
 
                 if (fComment
@@ -99,7 +96,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove comments (except documentation comments)",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.AllExceptDocumentation, context.Span, c));
+                        cancellationToken => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.AllExceptDocumentation, context.Span, cancellationToken));
                 }
 
                 if (fDocComment
@@ -107,36 +104,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     context.RegisterRefactoring(
                         "Remove documentation comments",
-                        c => RemoveCommentAsync(context.Document, CommentRemoveOptions.Documentation, context.Span, c));
+                        c => SyntaxRemover.RemoveCommentsAsync(context.Document, CommentRemoveOptions.Documentation, context.Span, c));
                 }
             }
-        }
-
-        private static async Task<Document> RemoveCommentAsync(
-            Document document,
-            CommentRemoveOptions removeOptions,
-            TextSpan span,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            SyntaxNode newRoot = SyntaxRemover.RemoveComment(root, removeOptions, span)
-                .WithFormatterAnnotation();
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static async Task<Document> RemoveCommentAsync(
-            Document document,
-            CommentRemoveOptions removeOptions,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            SyntaxNode newRoot = SyntaxRemover.RemoveComment(root, removeOptions)
-                .WithFormatterAnnotation();
-
-            return document.WithSyntaxRoot(newRoot);
         }
 
         private static bool IsDocumentationComment(SyntaxKind kind)

@@ -1,6 +1,6 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-namespace Pihrtsoft.CodeAnalysis.CSharp
+namespace Roslynator.CSharp
 {
     public static class DiagnosticIdentifiers
     {
@@ -63,7 +63,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public const string AvoidSemicolonAtEndOfDeclaration = Prefix + "1055";
         public const string AvoidUsageOfUsingAliasDirective = Prefix + "1056";
         public const string AddEmptyLineBetweenDeclarations = Prefix + "1057";
-        public const string SimplifyAssignmentExpression = Prefix + "1058";
+        public const string UseCompoundAssignment = Prefix + "1058";
         public const string AvoidLockingOnPubliclyAccessibleInstance = Prefix + "1059";
         public const string DeclareEachTypeInSeparateFile = Prefix + "1060";
         public const string MergeIfStatementWithNestedIfStatement = Prefix + "1061";
@@ -95,6 +95,30 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public const string UseCarriageReturnAndLinefeedAsNewLine = Prefix + "1087";
         public const string AvoidUsageOfTab = Prefix + "1088";
         public const string UsePostfixUnaryOperatorInsteadOfAssignment = Prefix + "1089";
-        public const string AddConfigureAwait = Prefix + "1090";
+        public const string CallConfigureAwait = Prefix + "1090";
+        public const string RemoveEmptyRegion = Prefix + "1091";
+        public const string AddEmptyLineAfterLastStatementInDoStatement = Prefix + "1092";
+        public const string RemoveFileWithNoCode = Prefix + "1093";
+        public const string DeclareUsingDirectiveOnTopLevel = Prefix + "1094";
+        public const string UseCSharp6DictionaryInitializer = Prefix + "1095";
+        public const string UseBitwiseOperationInsteadOfHasFlagMethod = Prefix + "1096";
+        public const string RemoveRedundantToStringCall = Prefix + "1097";
+        public const string AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression = Prefix  + "1098";
+        public const string DefaultLabelShouldBeLastLabelInSwitchSection = Prefix + "1099";
+        public const string FormatDocumentationSummaryOnSingleLine = Prefix + "1100";
+        public const string FormatDocumentationSummaryOnMultipleLines = Prefix + "1101";
+        public const string MarkClassAsStatic = Prefix + "1102";
+        public const string ReplaceIfStatementWithAssignment = Prefix + "1103";
+        public const string SimplifyConditionalExpression = Prefix + "1104";
+        public const string MergeInterpolationIntoInterpolatedString = Prefix + "1105";
+        public const string RemoveEmptyDestructor = Prefix + "1106";
+        public const string RemoveRedundantStringToCharArrayCall = Prefix + "1107";
+        public const string AddStaticModifierToAllPartialClassDeclarations = Prefix + "1108";
+        public const string UseCastMethodInsteadOfSelectMethod = Prefix + "1109";
+        public const string DeclareTypeInsideNamespace = Prefix + "1110";
+        public const string AddBracesToSwitchSectionWithMultipleStatements = Prefix + "1111";
+        public const string CombineEnumerableWhereMethodChain = Prefix + "1112";
+        public const string UseStringIsNullOrEmptyMethod = Prefix + "1113";
+        public const string RemoveRedundantDelegateCreation = Prefix + "1114";
     }
 }

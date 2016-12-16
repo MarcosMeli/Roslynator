@@ -1,17 +1,16 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.Refactorings.ReplaceStringLiteralRefactoring;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class StringLiteralExpressionRefactoring
     {
-        public static void ComputeRefactorings(RefactoringContext context, LiteralExpressionSyntax literalExpression)
+        public static async Task ComputeRefactoringsAsync(RefactoringContext context, LiteralExpressionSyntax literalExpression)
         {
-            if (!literalExpression.Span.Contains(context.Span))
-                return;
-
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.InsertStringInterpolation)
                 && context.SupportsCSharp6
                 && context.Span.End < literalExpression.Span.End)
@@ -24,7 +23,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         "Insert interpolation",
                         cancellationToken =>
                         {
-                            return ReplaceStringLiteralRefactoring.ReplaceWithInterpolatedStringAsync(
+                            return ReplaceWithInterpolatedStringAsync(
                                 context.Document,
                                 literalExpression,
                                 startIndex,
@@ -36,7 +35,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             if (context.Span.IsBetweenSpans(literalExpression))
             {
-                string text = GetTextWithoutEnclosingChars(literalExpression);
+                string text = literalExpression.GetStringLiteralInnerText();
 
                 if (literalExpression.IsVerbatimStringLiteral())
                 {
@@ -48,7 +47,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                                 "Replace verbatim string literal with regular string literal",
                                 cancellationToken =>
                                 {
-                                    return ReplaceStringLiteralRefactoring.ReplaceWithRegularStringLiteralAsync(
+                                    return ReplaceWithRegularStringLiteralAsync(
                                         context.Document,
                                         literalExpression,
                                         cancellationToken);
@@ -62,7 +61,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                                 "Replace verbatim string literal with regular string literals",
                                 cancellationToken =>
                                 {
-                                    return ReplaceStringLiteralRefactoring.ReplaceWithRegularStringLiteralsAsync(
+                                    return ReplaceWithRegularStringLiteralsAsync(
                                         context.Document,
                                         literalExpression,
                                         cancellationToken);
@@ -77,7 +76,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         "Replace regular string literal with verbatim string literal",
                         cancellationToken =>
                         {
-                            return ReplaceStringLiteralRefactoring.ReplaceWithVerbatimStringLiteralAsync(
+                            return ReplaceWithVerbatimStringLiteralAsync(
                                 context.Document,
                                 literalExpression,
                                 cancellationToken);
@@ -86,32 +85,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEmptyStringLiteralWithStringEmpty)
-                && ReplaceStringLiteralRefactoring.CanReplaceWithStringEmpty(literalExpression))
+                && CanReplaceWithStringEmpty(literalExpression))
             {
                 context.RegisterRefactoring(
                     "Replace \"\" with 'string.Empty'",
                     cancellationToken =>
                     {
-                        return ReplaceStringLiteralRefactoring.ReplaceWithStringEmptyAsync(
+                        return ReplaceWithStringEmptyAsync(
                             context.Document,
                             literalExpression,
                             cancellationToken);
                     });
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStringLiteralWithCharacterLiteral)
-                && ReplaceStringLiteralRefactoring.CanReplaceWithCharacterLiteral(literalExpression))
-            {
-                context.RegisterRefactoring(
-                    "Replace string literal with character literal",
-                    cancellationToken =>
-                    {
-                        return ReplaceStringLiteralRefactoring.ReplaceWithCharacterLiteralAsync(
-                            context.Document,
-                            literalExpression,
-                            cancellationToken);
-                    });
-            }
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStringLiteralWithCharacterLiteral))
+                await ReplaceStringLiteralWithCharacterLiteralRefactoring.ComputeRefactoringAsync(context, literalExpression).ConfigureAwait(false);
         }
 
         private static int GetStartIndex(RefactoringContext context, LiteralExpressionSyntax literalExpression)
@@ -129,30 +117,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             }
 
             return -1;
-        }
-
-        private static string GetTextWithoutEnclosingChars(LiteralExpressionSyntax literalExpression)
-        {
-            string s = literalExpression.Token.Text;
-
-            if (s.StartsWith("@", StringComparison.Ordinal))
-            {
-                if (s.StartsWith("@\"", StringComparison.Ordinal))
-                    s = s.Substring(2);
-
-                if (s.EndsWith("\"", StringComparison.Ordinal))
-                    s = s.Remove(s.Length - 1);
-            }
-            else
-            {
-                if (s.StartsWith("\"", StringComparison.Ordinal))
-                    s = s.Substring(1);
-
-                if (s.EndsWith("\"", StringComparison.Ordinal))
-                    s = s.Remove(s.Length - 1);
-            }
-
-            return s;
         }
     }
 }

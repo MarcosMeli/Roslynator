@@ -2,13 +2,12 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis;
-using Pihrtsoft.CodeAnalysis.CSharp;
-using Pihrtsoft.CodeAnalysis.Metadata;
+using Roslynator;
+using Roslynator.CSharp;
+using Roslynator.Metadata;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
 namespace CodeGenerator
 {
@@ -16,16 +15,16 @@ namespace CodeGenerator
     {
         public OptionsPagePropertiesGenerator()
         {
-            DefaultNamespace = "Pihrtsoft.CodeAnalysis.VisualStudio";
+            DefaultNamespace = "Roslynator.VisualStudio";
         }
 
         public CompilationUnitSyntax Generate(IEnumerable<RefactoringInfo> refactorings)
         {
             return CompilationUnit()
                 .WithUsings(
-                    UsingDirective(ParseName("System.ComponentModel")),
-                    UsingDirective(ParseName("Pihrtsoft.CodeAnalysis.CSharp.Refactorings")),
-                    UsingDirective(ParseName("Pihrtsoft.CodeAnalysis.VisualStudio.TypeConverters"))
+                    UsingDirective(ParseName(MetadataNames.System_ComponentModel)),
+                    UsingDirective(ParseName("Roslynator.CSharp.Refactorings")),
+                    UsingDirective(ParseName("Roslynator.VisualStudio.TypeConverters"))
                     )
                 .WithMembers(
                     NamespaceDeclaration(DefaultNamespace)
@@ -54,13 +53,14 @@ namespace CodeGenerator
                     Block(refactorings.Select(refactoring =>
                     {
                         return ExpressionStatement(
-                            InvocationExpression("SetIsEnabled")
-                                .WithArgumentList(
+                            InvocationExpression(
+                                "SetIsEnabled",
+                                ArgumentList(
                                     Argument(
                                         SimpleMemberAccessExpression(
                                             IdentifierName("RefactoringIdentifiers"),
                                             IdentifierName(refactoring.Identifier))),
-                                    Argument(refactoring.Identifier)));
+                                    Argument(IdentifierName(refactoring.Identifier)))));
                     })));
 
             foreach (RefactoringInfo info in refactorings)

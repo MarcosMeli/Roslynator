@@ -4,9 +4,9 @@ using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class UseLinefeedAsNewLineDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -29,27 +29,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            SourceText sourceText;
-            if (!context.Tree.TryGetText(out sourceText))
-                return;
-
-            SyntaxNode root;
-            if (!context.Tree.TryGetRoot(out root))
-                return;
-
-            foreach (TextLine textLine in sourceText.Lines)
-            {
-                int end = textLine.End;
-
-                if (textLine.EndIncludingLineBreak - end == 2
-                    && textLine.Text[end] == '\r'
-                    && textLine.Text[end + 1] == '\n')
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.UseLinefeedAsNewLine,
-                        Location.Create(context.Tree, new TextSpan(end, 2)));
-                }
-            }
+            UseLinefeedAsNewLineRefactoring.Analyze(context);
         }
     }
 }

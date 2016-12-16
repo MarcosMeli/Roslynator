@@ -1,21 +1,210 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp
+namespace Roslynator.CSharp
 {
     public static class CSharpFactory
     {
-        public static SyntaxTrivia IndentTrivia { get; } = Whitespace("    ");
+        private static readonly SymbolDisplayFormat _typeSymbolDisplayFormat = new SymbolDisplayFormat(
+            genericsOptions: SymbolDisplayGenericsOptions.IncludeTypeParameters,
+            typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+            miscellaneousOptions: SymbolDisplayMiscellaneousOptions.UseSpecialTypes);
 
-        public static SyntaxTrivia EmptyWhitespaceTrivia { get; } = SyntaxTrivia(SyntaxKind.WhitespaceTrivia, string.Empty);
+        public static SyntaxTrivia IndentTrivia()
+        {
+            return Whitespace("    ");
+        }
 
-        public static SyntaxTrivia NewLine { get; } = CreateNewLine();
+        public static SyntaxTrivia EmptyWhitespaceTrivia()
+        {
+            return SyntaxTrivia(SyntaxKind.WhitespaceTrivia, string.Empty);
+        }
+
+        public static SyntaxTrivia SpaceTrivia()
+        {
+            return Whitespace(" ");
+        }
+
+        public static SyntaxTrivia NewLineTrivia()
+        {
+            switch (Environment.NewLine)
+            {
+                case "\r":
+                    return CarriageReturn;
+                case "\n":
+                    return LineFeed;
+                default:
+                    return CarriageReturnLineFeed;
+            }
+        }
+
+        public static TypeSyntax Type(ITypeSymbol typeSymbol, SymbolDisplayFormat symbolDisplayFormat = null)
+        {
+            return Type(typeSymbol, default(SemanticModel), -1, symbolDisplayFormat);
+        }
+
+        public static TypeSyntax Type(ITypeSymbol typeSymbol, SemanticModel semanticModel, int position, SymbolDisplayFormat symbolDisplayFormat = null)
+        {
+            if (typeSymbol == null)
+                throw new ArgumentNullException(nameof(typeSymbol));
+
+            if (symbolDisplayFormat == null)
+                symbolDisplayFormat = _typeSymbolDisplayFormat;
+
+            Debug.Assert(typeSymbol.SupportsExplicitDeclaration(), typeSymbol.ToDisplayString(symbolDisplayFormat));
+
+            if (!typeSymbol.SupportsExplicitDeclaration())
+                throw new ArgumentException($"Type '{typeSymbol.ToDisplayString(symbolDisplayFormat)}' does not support explicit declaration.", nameof(typeSymbol));
+
+            if (semanticModel != null)
+            {
+                return ParseTypeName(typeSymbol.ToMinimalDisplayString(semanticModel, position, symbolDisplayFormat));
+            }
+            else
+            {
+                return ParseTypeName(typeSymbol.ToDisplayString(symbolDisplayFormat));
+            }
+        }
+
+        public static ExpressionSyntax DefaultValue(ITypeSymbol typeSymbol, TypeSyntax type = null)
+        {
+            if (typeSymbol == null)
+                throw new ArgumentNullException(nameof(typeSymbol));
+
+            if (typeSymbol.IsErrorType())
+                return null;
+
+            switch (typeSymbol.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    return FalseLiteralExpression();
+                case SpecialType.System_Char:
+                    return CharacterLiteralExpression('\0');
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                case SpecialType.System_Decimal:
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
+                    return ZeroLiteralExpression();
+            }
+
+            if (typeSymbol.Kind == SymbolKind.NamedType
+                && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
+            {
+                return NullLiteralExpression();
+            }
+
+            if (typeSymbol.BaseType?.SpecialType == SpecialType.System_Enum)
+            {
+                IFieldSymbol fieldSymbol = GetDefaultEnumMember(typeSymbol);
+
+                if (fieldSymbol != null)
+                {
+                    if (type == null)
+                        type = Type(typeSymbol).WithSimplifierAnnotation();
+
+                    Debug.Assert(type != null);
+
+                    return SimpleMemberAccessExpression(type, IdentifierName(fieldSymbol.Name));
+                }
+                else
+                {
+                    return ZeroLiteralExpression();
+                }
+            }
+
+            if (typeSymbol.IsValueType)
+            {
+                if (type == null)
+                    type = Type(typeSymbol).WithSimplifierAnnotation();
+
+                Debug.Assert(type != null);
+
+                return DefaultExpression(type);
+            }
+
+            return NullLiteralExpression();
+        }
+
+        private static IFieldSymbol GetDefaultEnumMember(ITypeSymbol typeSymbol)
+        {
+            foreach (ISymbol member in typeSymbol.GetMembers())
+            {
+                if (member.IsField())
+                {
+                    var fieldSymbol = (IFieldSymbol)member;
+
+                    if (fieldSymbol.HasConstantValue
+                        && fieldSymbol.ConstantValue is int
+                        && (int)fieldSymbol.ConstantValue == 0)
+                    {
+                        return fieldSymbol;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        public static ExpressionSyntax ConstantExpression(object value)
+        {
+            if (value == null)
+                return NullLiteralExpression();
+
+            if (value is bool)
+                return ((bool)value) ? TrueLiteralExpression() : FalseLiteralExpression();
+
+            if (value is char)
+                return CharacterLiteralExpression((char)value);
+
+            if (value is sbyte)
+                return NumericLiteralExpression((sbyte)value);
+
+            if (value is byte)
+                return NumericLiteralExpression((byte)value);
+
+            if (value is short)
+                return NumericLiteralExpression((short)value);
+
+            if (value is ushort)
+                return NumericLiteralExpression((ushort)value);
+
+            if (value is int)
+                return NumericLiteralExpression((int)value);
+
+            if (value is uint)
+                return NumericLiteralExpression((uint)value);
+
+            if (value is long)
+                return NumericLiteralExpression((long)value);
+
+            if (value is ulong)
+                return NumericLiteralExpression((ulong)value);
+
+            if (value is decimal)
+                return NumericLiteralExpression((decimal)value);
+
+            if (value is float)
+                return NumericLiteralExpression((float)value);
+
+            if (value is double)
+                return NumericLiteralExpression((double)value);
+
+            return StringLiteralExpression(value.ToString());
+        }
 
         internal static SyntaxTokenList TokenList(params SyntaxKind[] kinds)
         {
@@ -35,6 +224,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public static AssignmentExpressionSyntax SimpleAssignmentExpression(ExpressionSyntax left, ExpressionSyntax right)
         {
             return AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, left, right);
+        }
+
+        public static AssignmentExpressionSyntax SimpleAssignmentExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, left, operatorToken, right);
         }
 
         public static ExpressionStatementSyntax SimpleAssignmentExpressionStatement(ExpressionSyntax left, ExpressionSyntax right)
@@ -93,11 +287,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return SyntaxFactory.ArgumentList(SeparatedList(arguments));
         }
 
-        public static ArgumentSyntax Argument(string name)
-        {
-            return SyntaxFactory.Argument(IdentifierName(name));
-        }
-
         public static AttributeSyntax Attribute(string name)
         {
             return SyntaxFactory.Attribute(IdentifierName(name));
@@ -123,18 +312,29 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return SyntaxFactory.InvocationExpression(IdentifierName(name));
         }
 
-        public static InvocationExpressionSyntax InvocationExpression(string name, ArgumentSyntax argument)
+        public static InvocationExpressionSyntax InvocationExpression(string name, ArgumentListSyntax argumentList)
         {
-            return SyntaxFactory.InvocationExpression(
-                IdentifierName(name),
-                ArgumentList(argument));
+            return SyntaxFactory.InvocationExpression(IdentifierName(name), argumentList);
         }
 
-        public static InvocationExpressionSyntax InvocationExpression(string name, params ArgumentSyntax[] arguments)
+        public static InvocationExpressionSyntax InvocationExpression(ExpressionSyntax expression, string name)
         {
-            return SyntaxFactory.InvocationExpression(
-                IdentifierName(name),
-                ArgumentList(arguments));
+            return InvocationExpression(expression, IdentifierName(name));
+        }
+
+        public static InvocationExpressionSyntax InvocationExpression(ExpressionSyntax expression, SimpleNameSyntax name)
+        {
+            return SyntaxFactory.InvocationExpression(SimpleMemberAccessExpression(expression, name));
+        }
+
+        public static InvocationExpressionSyntax InvocationExpression(ExpressionSyntax expression, string name, ArgumentListSyntax argumentList)
+        {
+            return InvocationExpression(expression, IdentifierName(name), argumentList);
+        }
+
+        public static InvocationExpressionSyntax InvocationExpression(ExpressionSyntax expression, SimpleNameSyntax name, ArgumentListSyntax argumentList)
+        {
+            return SyntaxFactory.InvocationExpression(SimpleMemberAccessExpression(expression, name), argumentList);
         }
 
         public static AccessorDeclarationSyntax Getter(BlockSyntax body = null)
@@ -187,6 +387,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             }
         }
 
+        public static AccessorDeclarationSyntax AddAccessorDeclaration(BlockSyntax body = null)
+        {
+            return AccessorDeclaration(SyntaxKind.AddAccessorDeclaration, body);
+        }
+
+        public static AccessorDeclarationSyntax RemoveAccessorDeclaration(BlockSyntax body = null)
+        {
+            return AccessorDeclaration(SyntaxKind.RemoveAccessorDeclaration, body);
+        }
+
         public static VariableDeclarationSyntax VariableDeclaration(TypeSyntax type, VariableDeclaratorSyntax variable)
         {
             return SyntaxFactory.VariableDeclaration(type, SingletonSeparatedList(variable));
@@ -235,6 +445,106 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public static SyntaxToken ConstToken()
         {
             return Token(SyntaxKind.ConstKeyword);
+        }
+
+        public static SyntaxToken EqualsToken()
+        {
+            return Token(SyntaxKind.EqualsToken);
+        }
+
+        public static SyntaxToken GreaterThanToken()
+        {
+            return Token(SyntaxKind.GreaterThanToken);
+        }
+
+        public static SyntaxToken GreaterThanEqualsToken()
+        {
+            return Token(SyntaxKind.GreaterThanEqualsToken);
+        }
+
+        public static SyntaxToken LessThanToken()
+        {
+            return Token(SyntaxKind.LessThanToken);
+        }
+
+        public static SyntaxToken LessThanEqualsToken()
+        {
+            return Token(SyntaxKind.LessThanEqualsToken);
+        }
+
+        public static SyntaxToken ArrowToken()
+        {
+            return Token(SyntaxKind.EqualsGreaterThanToken);
+        }
+
+        public static SyntaxToken ExclamationEqualsToken()
+        {
+            return Token(SyntaxKind.ExclamationEqualsToken);
+        }
+
+        public static SyntaxToken OpenParenToken()
+        {
+            return Token(SyntaxKind.OpenParenToken);
+        }
+
+        public static SyntaxToken CloseParenToken()
+        {
+            return Token(SyntaxKind.CloseParenToken);
+        }
+
+        public static SyntaxToken OpenBraceToken()
+        {
+            return Token(SyntaxKind.OpenBraceToken);
+        }
+
+        public static SyntaxToken CloseBraceToken()
+        {
+            return Token(SyntaxKind.CloseBraceToken);
+        }
+
+        public static SyntaxToken OpenBracketToken()
+        {
+            return Token(SyntaxKind.OpenBracketToken);
+        }
+
+        public static SyntaxToken CloseBracketToken()
+        {
+            return Token(SyntaxKind.CloseBracketToken);
+        }
+
+        public static SyntaxToken AsyncToken()
+        {
+            return Token(SyntaxKind.AsyncKeyword);
+        }
+
+        public static SyntaxToken BarBarToken()
+        {
+            return Token(SyntaxKind.BarBarToken);
+        }
+
+        public static SyntaxToken AmpersandAmpersandToken()
+        {
+            return Token(SyntaxKind.AmpersandAmpersandToken);
+        }
+
+        public static SyntaxToken QuestionToken()
+        {
+            return Token(SyntaxKind.QuestionToken);
+        }
+
+        public static SyntaxToken ColonToken()
+        {
+            return Token(SyntaxKind.ColonToken);
+        }
+
+        public static SyntaxToken WhileKeyword()
+        {
+            return Token(SyntaxKind.WhileKeyword);
+        }
+
+        public static SyntaxToken ReturnKeyword()
+        {
+            return Token(SyntaxKind.ReturnKeyword);
         }
 
         private static SyntaxToken Token(SyntaxKind syntaxKind)
@@ -352,7 +662,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return Token(SyntaxKind.PartialKeyword);
         }
 
-        public static IdentifierNameSyntax Var()
+        public static SyntaxToken VirtualToken()
+        {
+            return Token(SyntaxKind.VirtualKeyword);
+        }
+
+        public static SyntaxToken AbstractKeyword()
+        {
+            return Token(SyntaxKind.AbstractKeyword);
+        }
+
+        public static IdentifierNameSyntax VarType()
         {
             return IdentifierName("var");
         }
@@ -452,9 +772,19 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return BinaryExpression(SyntaxKind.BitwiseAndExpression, left, right);
         }
 
+        public static BinaryExpressionSyntax BitwiseAndExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.BitwiseAndExpression, left, operatorToken, right);
+        }
+
         public static BinaryExpressionSyntax BitwiseOrExpression(ExpressionSyntax left, ExpressionSyntax right)
         {
             return BinaryExpression(SyntaxKind.BitwiseOrExpression, left, right);
+        }
+
+        public static BinaryExpressionSyntax BitwiseOrExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.BitwiseOrExpression, left, operatorToken, right);
         }
 
         public static BinaryExpressionSyntax LogicalAndExpression(ExpressionSyntax left, ExpressionSyntax right)
@@ -462,9 +792,75 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return BinaryExpression(SyntaxKind.LogicalAndExpression, left, right);
         }
 
+        public static BinaryExpressionSyntax LogicalAndExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.LogicalAndExpression, left, operatorToken, right);
+        }
+
+        public static BinaryExpressionSyntax LogicalAndExpression(ExpressionSyntax left, ExpressionSyntax right, bool addParenthesesIfNecessary)
+        {
+            if (addParenthesesIfNecessary)
+            {
+                return LogicalAndExpression(
+                    (AreParenthesesNecessaryInLogicalAndExpression(left))
+                        ? left.Parenthesize(cutCopyTrivia: true)
+                        : left,
+                    (AreParenthesesNecessaryInLogicalAndExpression(right))
+                        ? right.Parenthesize(cutCopyTrivia: true)
+                        : right);
+            }
+            else
+            {
+                return LogicalAndExpression(left, right);
+            }
+        }
+
+        private static bool AreParenthesesNecessaryInLogicalAndExpression(ExpressionSyntax expression)
+        {
+            switch (expression.Kind())
+            {
+                case SyntaxKind.ParenthesizedExpression:
+                case SyntaxKind.TrueLiteralExpression:
+                case SyntaxKind.FalseLiteralExpression:
+                case SyntaxKind.IdentifierName:
+                case SyntaxKind.InvocationExpression:
+                case SyntaxKind.SimpleMemberAccessExpression:
+                case SyntaxKind.ElementAccessExpression:
+                case SyntaxKind.LogicalNotExpression:
+                case SyntaxKind.CastExpression:
+                case SyntaxKind.MultiplyExpression:
+                case SyntaxKind.DivideExpression:
+                case SyntaxKind.ModuloExpression:
+                case SyntaxKind.AddExpression:
+                case SyntaxKind.SubtractExpression:
+                case SyntaxKind.LeftShiftExpression:
+                case SyntaxKind.RightShiftExpression:
+                case SyntaxKind.LessThanExpression:
+                case SyntaxKind.GreaterThanExpression:
+                case SyntaxKind.LessThanOrEqualExpression:
+                case SyntaxKind.GreaterThanOrEqualExpression:
+                case SyntaxKind.IsExpression:
+                case SyntaxKind.AsExpression:
+                case SyntaxKind.EqualsExpression:
+                case SyntaxKind.NotEqualsExpression:
+                case SyntaxKind.BitwiseAndExpression:
+                case SyntaxKind.BitwiseOrExpression:
+                case SyntaxKind.ExclusiveOrExpression:
+                case SyntaxKind.LogicalAndExpression:
+                    return false;
+                default:
+                    return true;
+            }
+        }
+
         public static BinaryExpressionSyntax LogicalOrExpression(ExpressionSyntax left, ExpressionSyntax right)
         {
             return BinaryExpression(SyntaxKind.LogicalOrExpression, left, right);
+        }
+
+        public static BinaryExpressionSyntax LogicalOrExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.LogicalOrExpression, left, operatorToken, right);
         }
 
         public static BinaryExpressionSyntax EqualsExpression(ExpressionSyntax left, ExpressionSyntax right)
@@ -472,9 +868,54 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return BinaryExpression(SyntaxKind.EqualsExpression, left, right);
         }
 
+        public static BinaryExpressionSyntax EqualsExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.EqualsExpression, left, operatorToken, right);
+        }
+
         public static BinaryExpressionSyntax NotEqualsExpression(ExpressionSyntax left, ExpressionSyntax right)
         {
             return BinaryExpression(SyntaxKind.NotEqualsExpression, left, right);
+        }
+
+        public static BinaryExpressionSyntax NotEqualsExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.NotEqualsExpression, left, operatorToken, right);
+        }
+
+        public static BinaryExpressionSyntax AsExpression(ExpressionSyntax expression, TypeSyntax type)
+        {
+            return BinaryExpression(SyntaxKind.AsExpression, expression, type);
+        }
+
+        public static BinaryExpressionSyntax AsExpression(ExpressionSyntax expression, SyntaxToken operatorToken, TypeSyntax type)
+        {
+            return BinaryExpression(SyntaxKind.AsExpression, expression, operatorToken, type);
+        }
+
+        public static BinaryExpressionSyntax AddExpression(ExpressionSyntax left, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.AddExpression, left, right);
+        }
+
+        public static BinaryExpressionSyntax AddExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.AddExpression, left, operatorToken, right);
+        }
+
+        public static BinaryExpressionSyntax SubtractExpression(ExpressionSyntax left, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.SubtractExpression, left, right);
+        }
+
+        public static BinaryExpressionSyntax SubtractExpression(ExpressionSyntax left, SyntaxToken operatorToken, ExpressionSyntax right)
+        {
+            return BinaryExpression(SyntaxKind.SubtractExpression, left, operatorToken, right);
+        }
+
+        public static PrefixUnaryExpressionSyntax LogicalNotExpression(ExpressionSyntax operand)
+        {
+            return PrefixUnaryExpression(SyntaxKind.LogicalNotExpression, operand);
         }
 
         public static AttributeSyntax Attribute(string name, AttributeArgumentSyntax argument)
@@ -507,7 +948,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         {
             return InvocationExpression(
                 "nameof",
-                Argument(identifier));
+                ArgumentList(
+                    SyntaxFactory.Argument(IdentifierName(identifier))));
         }
 
         public static UsingDirectiveSyntax UsingStaticDirective(string name)
@@ -597,6 +1039,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             return SyntaxFactory.AccessorList(List(accessors));
         }
 
+        public static AccessorListSyntax AccessorList(IEnumerable<AccessorDeclarationSyntax> accessors)
+        {
+            return SyntaxFactory.AccessorList(List(accessors));
+        }
+
         public static YieldStatementSyntax YieldReturnStatement(ExpressionSyntax expression)
         {
             return YieldStatement(SyntaxKind.YieldReturnStatement, expression);
@@ -605,19 +1052,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public static YieldStatementSyntax YieldBreakStatement()
         {
             return YieldStatement(SyntaxKind.YieldBreakStatement);
-        }
-
-        private static SyntaxTrivia CreateNewLine()
-        {
-            switch (Environment.NewLine)
-            {
-                case "\r":
-                    return CarriageReturn;
-                case "\n":
-                    return LineFeed;
-                default:
-                    return CarriageReturnLineFeed;
-            }
         }
 
         public static ObjectCreationExpressionSyntax ObjectCreationExpression(TypeSyntax type, ArgumentListSyntax argumentList)
@@ -653,6 +1087,80 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         public static PostfixUnaryExpressionSyntax PostDecrementExpression(ExpressionSyntax operand)
         {
             return PostfixUnaryExpression(SyntaxKind.PostDecrementExpression, operand);
+        }
+
+        public static ConstructorInitializerSyntax BaseConstructorInitializer(ArgumentListSyntax argumentList = null)
+        {
+            return ConstructorInitializer(SyntaxKind.BaseConstructorInitializer, argumentList);
+        }
+
+        public static ConstructorInitializerSyntax ThisConstructorInitializer(ArgumentListSyntax argumentList = null)
+        {
+            return ConstructorInitializer(SyntaxKind.ThisConstructorInitializer, argumentList);
+        }
+
+        public static ParameterListSyntax ParameterList(IEnumerable<ParameterSyntax> parameters)
+        {
+            return SyntaxFactory.ParameterList(SeparatedList(parameters));
+        }
+
+        public static ParameterListSyntax ParameterList(ParameterSyntax parameter)
+        {
+            return SyntaxFactory.ParameterList(SingletonSeparatedList(parameter));
+        }
+
+        public static ParameterListSyntax ParameterList(params ParameterSyntax[] parameters)
+        {
+            return SyntaxFactory.ParameterList(SeparatedList(parameters));
+        }
+
+        public static SwitchSectionSyntax SwitchSection(SwitchLabelSyntax switchLabel, StatementSyntax statement)
+        {
+            return SwitchSection(switchLabel, SingletonList(statement));
+        }
+
+        public static SwitchSectionSyntax SwitchSection(SwitchLabelSyntax switchLabel, SyntaxList<StatementSyntax> statements)
+        {
+            return SyntaxFactory.SwitchSection(SingletonList(switchLabel), statements);
+        }
+
+        public static SwitchSectionSyntax DefaultSwitchSection(StatementSyntax statement)
+        {
+            return DefaultSwitchSection(SingletonList(statement));
+        }
+
+        public static SwitchSectionSyntax DefaultSwitchSection(SyntaxList<StatementSyntax> statements)
+        {
+            return SwitchSection(DefaultSwitchLabel(), statements);
+        }
+
+        public static ImplicitElementAccessSyntax ImplicitElementAccess(ExpressionSyntax expression)
+        {
+            return SyntaxFactory.ImplicitElementAccess(
+                BracketedArgumentList(
+                    SingletonSeparatedList(SyntaxFactory.Argument(expression))));
+        }
+
+        public static GenericNameSyntax GenericName(SyntaxToken identifier, TypeSyntax typeArgument)
+        {
+            return SyntaxFactory.GenericName(identifier, TypeArgumentList(SingletonSeparatedList(typeArgument)));
+        }
+
+        public static LocalDeclarationStatementSyntax LocalDeclarationStatement(TypeSyntax type, string identifier, ExpressionSyntax value = null)
+        {
+            return LocalDeclarationStatement(type, Identifier(identifier), value);
+        }
+
+        public static LocalDeclarationStatementSyntax LocalDeclarationStatement(TypeSyntax type, SyntaxToken identifier, ExpressionSyntax value = null)
+        {
+            VariableDeclaratorSyntax declarator = (value != null)
+                ? VariableDeclarator(identifier, default(BracketedArgumentListSyntax), EqualsValueClause(value))
+                : VariableDeclarator(identifier);
+
+            return SyntaxFactory.LocalDeclarationStatement(
+                SyntaxFactory.VariableDeclaration(
+                    type,
+                    SingletonSeparatedList(declarator)));
         }
     }
 }

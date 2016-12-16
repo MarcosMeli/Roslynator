@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+using System.Threading.Tasks;
+
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class ReplaceMethodWithPropertyRefactoring
     {
@@ -19,6 +21,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
         {
             var a = GetValue();
             var b = this.GetValue();
+        }
+
+        public async Task<bool> FooAsync()
+        {
+            return await Task.FromResult(false).ConfigureAwait(false);
         }
     }
 }

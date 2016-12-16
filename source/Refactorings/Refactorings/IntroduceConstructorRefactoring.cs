@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,32 +9,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class IntroduceConstructorRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, MemberDeclarationSyntax declaration)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceConstructor)
-                && context.SupportsSemanticModel)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.IntroduceConstructor))
             {
                 List<MemberDeclarationSyntax> members = await GetAssignableMembersAsync(context, declaration).ConfigureAwait(false);
 
                 if (members?.Count > 0)
                 {
-                    string text = "Introduce constructor";
-
                     context.RegisterRefactoring(
-                        text,
-                        cancellationToken =>
-                        {
-                            return RefactorAsync(
-                                context.Document,
-                                declaration,
-                                members,
-                                cancellationToken);
-                        });
+                        "Introduce constructor",
+                        cancellationToken => RefactorAsync(context.Document, declaration, members, cancellationToken));
                 }
             }
         }
@@ -135,9 +127,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (fieldDeclaration.Declaration != null
                 && fieldDeclaration.Declaration.Variables.Count == 1)
             {
-                MemberDeclarationSyntax parentDeclaration = GetContainingDeclaration(fieldDeclaration);
+                MemberDeclarationSyntax parentMember = GetContainingMember(fieldDeclaration);
 
-                if (parentDeclaration != null)
+                if (parentMember != null)
                 {
                     SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
@@ -145,7 +137,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                     return symbol != null
                         && !symbol.IsStatic
-                        && !parentDeclaration
+                        && !parentMember
                             .GetMembers()
                             .Any(member => IsBackingField(member, symbol, context, semanticModel));
                 }
@@ -228,22 +220,18 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             List<MemberDeclarationSyntax> assignableMembers,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            MemberDeclarationSyntax parentMember = GetContainingMember(declaration);
 
-            MemberDeclarationSyntax parentDeclaration = GetContainingDeclaration(declaration);
+            SyntaxList<MemberDeclarationSyntax> members = parentMember.GetMembers();
 
-            SyntaxList<MemberDeclarationSyntax> members = parentDeclaration.GetMembers();
+            SyntaxList<MemberDeclarationSyntax> newMembers = MemberInserter.InsertMember(
+                members,
+                CreateConstructor(GetConstructorIdentifierText(parentMember), assignableMembers));
 
-            SyntaxList<MemberDeclarationSyntax> newMembers = members.Insert(
-                IndexOfLastConstructorOrField(members) + 1,
-                CreateConstructor(GetConstructorIdentifierText(parentDeclaration), assignableMembers));
-
-            MemberDeclarationSyntax newNode = parentDeclaration.SetMembers(newMembers)
+            MemberDeclarationSyntax newNode = parentMember.SetMembers(newMembers)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(parentDeclaration, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(parentMember, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static string GetConstructorIdentifierText(MemberDeclarationSyntax declaration)
@@ -259,7 +247,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             return null;
         }
 
-        private static MemberDeclarationSyntax GetContainingDeclaration(MemberDeclarationSyntax declaration)
+        private static MemberDeclarationSyntax GetContainingMember(MemberDeclarationSyntax declaration)
         {
             switch (declaration.Kind())
             {
@@ -267,7 +255,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 case SyntaxKind.StructDeclaration:
                     return declaration;
                 default:
-                    return (MemberDeclarationSyntax)declaration.Parent;
+                    {
+                        Debug.Assert(declaration.Parent is MemberDeclarationSyntax, "Parent is not MemberDeclarationSyntax");
+                        return declaration.Parent as MemberDeclarationSyntax;
+                    }
             }
         }
 
@@ -282,8 +273,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 string parameterName = TextUtility.ToCamelCase(name);
 
                 statements.Add(ExpressionStatement(
-                    AssignmentExpression(
-                        SyntaxKind.SimpleAssignmentExpression,
+                    SimpleAssignmentExpression(
                         IdentifierName(name),
                         IdentifierName(parameterName))));
 
@@ -292,33 +282,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     default(SyntaxTokenList),
                     GetType(member),
                     Identifier(parameterName),
-                    null));
+                    default(EqualsValueClauseSyntax)));
             }
 
             return ConstructorDeclaration(
                 default(SyntaxList<AttributeListSyntax>),
-                TokenList(Token(SyntaxKind.PublicKeyword)),
+                Modifiers.Public(),
                 Identifier(identifierText),
                 ParameterList(SeparatedList(parameters)),
-                null,
+                default(ConstructorInitializerSyntax),
                 Block(statements));
-        }
-
-        private static int IndexOfLastConstructorOrField(SyntaxList<MemberDeclarationSyntax> members)
-        {
-            for (int i = members.Count - 1; i >= 0; i--)
-            {
-                if (members[i].IsKind(SyntaxKind.ConstructorDeclaration))
-                    return i;
-            }
-
-            for (int i = members.Count - 1; i >= 0; i--)
-            {
-                if (members[i].IsKind(SyntaxKind.FieldDeclaration))
-                    return i;
-            }
-
-            return -1;
         }
 
         private static TypeSyntax GetType(MemberDeclarationSyntax memberDeclaration)

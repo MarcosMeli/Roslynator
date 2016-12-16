@@ -6,9 +6,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class VariableDeclarationDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -39,44 +38,39 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var variableDeclaration = (VariableDeclarationSyntax)context.Node;
 
-            if (variableDeclaration.Variables.Count != 1)
-                return;
-
-            TypeAnalysisResult result = VariableDeclarationAnalysis.AnalyzeType(
-                variableDeclaration,
-                context.SemanticModel,
-                context.CancellationToken);
-
-            switch (result)
+            if (variableDeclaration.Variables.Count == 1)
             {
-                case TypeAnalysisResult.Explicit:
-                    {
-                        break;
-                    }
-                case TypeAnalysisResult.ExplicitButShouldBeImplicit:
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.UseVarInsteadOfExplicitType,
-                            variableDeclaration.Type.GetLocation());
+                switch (TypeAnalyzer.AnalyzeType(variableDeclaration, context.SemanticModel, context.CancellationToken))
+                {
+                    case TypeAnalysisResult.Explicit:
+                        {
+                            break;
+                        }
+                    case TypeAnalysisResult.ExplicitButShouldBeImplicit:
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.UseVarInsteadOfExplicitType,
+                                variableDeclaration.Type.GetLocation());
 
-                        break;
-                    }
-                case TypeAnalysisResult.Implicit:
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.UseExplicitTypeInsteadOfVarEvenIfObvious,
-                            variableDeclaration.Type.GetLocation());
+                            break;
+                        }
+                    case TypeAnalysisResult.Implicit:
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.UseExplicitTypeInsteadOfVarEvenIfObvious,
+                                variableDeclaration.Type.GetLocation());
 
-                        break;
-                    }
-                case TypeAnalysisResult.ImplicitButShouldBeExplicit:
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.UseExplicitTypeInsteadOfVar,
-                            variableDeclaration.Type.GetLocation());
+                            break;
+                        }
+                    case TypeAnalysisResult.ImplicitButShouldBeExplicit:
+                        {
+                            context.ReportDiagnostic(
+                                DiagnosticDescriptors.UseExplicitTypeInsteadOfVar,
+                                variableDeclaration.Type.GetLocation());
 
-                        break;
-                    }
+                            break;
+                        }
+                }
             }
         }
     }

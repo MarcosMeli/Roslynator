@@ -2,7 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp
+namespace Roslynator.CSharp
 {
     public static class DiagnosticDescriptors
     {
@@ -276,9 +276,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             title: "Format binary operator on next line.",
             messageFormat: "Consider formatting binary operator on next line.",
             category: DiagnosticCategories.General,
-            defaultSeverity: DiagnosticSeverity.Hidden,
-            isEnabledByDefault: true,
-            customTags: WellKnownDiagnosticTags.Unnecessary
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
         );
 
         public static readonly DiagnosticDescriptor AddEmptyLineAfterEmbeddedStatement = new DiagnosticDescriptor(
@@ -325,8 +324,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
 
         public static readonly DiagnosticDescriptor RemoveRedundantSealedModifier = new DiagnosticDescriptor(
             id: DiagnosticIdentifiers.RemoveRedundantSealedModifier,
-            title: "Remove redundant 'sealed' modifier.",
-            messageFormat: "Consider removing redundant 'sealed' modifier.",
+            title: "Remove redundant sealed modifier.",
+            messageFormat: "Consider removing redundant sealed modifier.",
             category: DiagnosticCategories.General,
             defaultSeverity: DiagnosticSeverity.Hidden,
             isEnabledByDefault: true,
@@ -413,8 +412,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
 
         public static readonly DiagnosticDescriptor RemovePartialModifierFromTypeWithSinglePart = new DiagnosticDescriptor(
             id: DiagnosticIdentifiers.RemovePartialModifierFromTypeWithSinglePart,
-            title: "Remove 'partial' modifier from type with a single part.",
-            messageFormat: "Consider removing 'partial' modifier from type with a single part.",
+            title: "Remove partial modifier from type with a single part.",
+            messageFormat: "Consider removing partial modifier from type with a single part.",
             category: DiagnosticCategories.General,
             defaultSeverity: DiagnosticSeverity.Hidden,
             isEnabledByDefault: true,
@@ -548,16 +547,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             isEnabledByDefault: true
         );
 
-        public static readonly DiagnosticDescriptor SimplifyAssignmentExpression = new DiagnosticDescriptor(
-            id: DiagnosticIdentifiers.SimplifyAssignmentExpression,
-            title: "Simplify assignment expression.",
-            messageFormat: "Consider simplifying assignment expression.",
+        public static readonly DiagnosticDescriptor UseCompoundAssignment = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.UseCompoundAssignment,
+            title: "Use compound assignment.",
+            messageFormat: "Consider using {0} operator.",
             category: DiagnosticCategories.General,
             defaultSeverity: DiagnosticSeverity.Info,
             isEnabledByDefault: true
         );
 
-        public static readonly DiagnosticDescriptor SimplifyAssignmentExpressionFadeOut = SimplifyAssignmentExpression.CreateFadeOut();
+        public static readonly DiagnosticDescriptor UseCompoundAssignmentFadeOut = UseCompoundAssignment.CreateFadeOut();
 
         public static readonly DiagnosticDescriptor AvoidLockingOnPubliclyAccessibleInstance = new DiagnosticDescriptor(
             id: DiagnosticIdentifiers.AvoidLockingOnPubliclyAccessibleInstance,
@@ -739,8 +738,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             messageFormat: "Consider simplifying LINQ method chain.",
             category: DiagnosticCategories.General,
             defaultSeverity: DiagnosticSeverity.Info,
-            isEnabledByDefault: true,
-            customTags: WellKnownDiagnosticTags.Unnecessary
+            isEnabledByDefault: true
         );
 
         public static readonly DiagnosticDescriptor ReplaceStringEmptyWithEmptyStringLiteral = new DiagnosticDescriptor(
@@ -854,13 +852,238 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
             isEnabledByDefault: true
         );
 
-        public static readonly DiagnosticDescriptor AddConfigureAwait = new DiagnosticDescriptor(
-             id: DiagnosticIdentifiers.AddConfigureAwait,
-             title: "Add 'ConfigureAwait(false)' to awaitable expression.",
-             messageFormat: "Consider adding 'ConfigureAwait(false) to awaitable expression.",
+        public static readonly DiagnosticDescriptor UsePostfixUnaryOperatorInsteadOfAssignmentFadeOut = UsePostfixUnaryOperatorInsteadOfAssignment.CreateFadeOut();
+
+        public static readonly DiagnosticDescriptor CallConfigureAwait = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.CallConfigureAwait,
+             title: "Call 'ConfigureAwait(false)'.",
+             messageFormat: "Consider calling 'ConfigureAwait(false).",
              category: DiagnosticCategories.General,
              defaultSeverity: DiagnosticSeverity.Info,
              isEnabledByDefault: true
-         );
+        );
+
+        public static readonly DiagnosticDescriptor RemoveEmptyRegion = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.RemoveEmptyRegion,
+             title: "Remove empty region.",
+             messageFormat: "Consider removing empty region.",
+             category: DiagnosticCategories.General,
+             defaultSeverity: DiagnosticSeverity.Info,
+             isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor AddEmptyLineAfterLastStatementInDoStatement = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.AddEmptyLineAfterLastStatementInDoStatement,
+             title: "Add empty line after last statement in do statement.",
+             messageFormat: "Consider adding empty line after last statement in do statement.",
+             category: DiagnosticCategories.General,
+             defaultSeverity: DiagnosticSeverity.Info,
+             isEnabledByDefault: false
+        );
+
+        public static readonly DiagnosticDescriptor RemoveFileWithNoCode = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.RemoveFileWithNoCode,
+             title: "Remove file with no code.",
+             messageFormat: "Consider removing file with no code.",
+             category: DiagnosticCategories.General,
+             defaultSeverity: DiagnosticSeverity.Info,
+             isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor DeclareUsingDirectiveOnTopLevel = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.DeclareUsingDirectiveOnTopLevel,
+             title: "Declare using directive on top level.",
+             messageFormat: "Consider declaring using directive on top level.",
+             category: DiagnosticCategories.General,
+             defaultSeverity: DiagnosticSeverity.Warning,
+             isEnabledByDefault: false
+        );
+
+        public static readonly DiagnosticDescriptor UseCSharp6DictionaryInitializer = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.UseCSharp6DictionaryInitializer,
+            title: "Use C# 6.0 dictionary initializer.",
+            messageFormat: "Consider using C# 6.0 dictionary initializer.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor UseBitwiseOperationInsteadOfHasFlagMethod = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.UseBitwiseOperationInsteadOfHasFlagMethod,
+            title: "Use bitwise operation instead of 'HasFlag' method.",
+            messageFormat: "Consider using bitwise operation instead of 'HasFlag' method.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor RemoveRedundantToStringCall = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.RemoveRedundantToStringCall,
+            title: "Remove redundant 'ToString' call.",
+            messageFormat: "Consider removing redundant 'ToString' call.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            customTags: WellKnownDiagnosticTags.Unnecessary
+        );
+
+        public static readonly DiagnosticDescriptor AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression,
+            title: "Avoid 'null' on the left side of a binary expression.",
+            messageFormat: "Consider swapping the left and right part of a binary expression so that 'null' is on the right side.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor DefaultLabelShouldBeLastLabelInSwitchSection = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.DefaultLabelShouldBeLastLabelInSwitchSection,
+            title: "Default label should be last label in switch section.",
+            messageFormat: "Consider moving default label to last position in switch section.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor FormatDocumentationSummaryOnSingleLine = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.FormatDocumentationSummaryOnSingleLine,
+            title: "Format documentation summary on a single line.",
+            messageFormat: "Consider formatting documentation summary on a single line.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: false
+        );
+
+        public static readonly DiagnosticDescriptor FormatDocumentationSummaryOnMultipleLines = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.FormatDocumentationSummaryOnMultipleLines,
+            title: "Format documentation summary on multiple lines.",
+            messageFormat: "Consider formatting documentation summary on multiple lines.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: false
+        );
+
+        public static readonly DiagnosticDescriptor MarkClassAsStatic = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.MarkClassAsStatic,
+            title: "Mark class as static.",
+            messageFormat: "Consider marking class as static.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor ReplaceIfStatementWithAssignment = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.ReplaceIfStatementWithAssignment,
+            title: "Replace if statement with assignment.",
+            messageFormat: "Consider replacing if statement with assignment.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor SimplifyConditionalExpression = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.SimplifyConditionalExpression,
+            title: "Simplify conditional expression.",
+            messageFormat: "Consider simplifying conditional expression.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor MergeInterpolationIntoInterpolatedString = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.MergeInterpolationIntoInterpolatedString,
+            title: "Merge interpolation into interpolated string.",
+            messageFormat: "Consider merging interpolation into interpolated string.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor RemoveEmptyDestructor = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.RemoveEmptyDestructor,
+            title: "Remove empty destructor.",
+            messageFormat: "Consider removing empty destructor.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            customTags: WellKnownDiagnosticTags.Unnecessary
+        );
+
+        public static readonly DiagnosticDescriptor RemoveRedundantStringToCharArrayCall = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.RemoveRedundantStringToCharArrayCall,
+            title: "Remove redundant 'ToCharArray' call.",
+            messageFormat: "Consider removing redundant 'ToCharArray' call.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true,
+            customTags: WellKnownDiagnosticTags.Unnecessary
+        );
+
+        public static readonly DiagnosticDescriptor AddStaticModifierToAllPartialClassDeclarations = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.AddStaticModifierToAllPartialClassDeclarations,
+            title: "Add static modifier to all partial class declarations.",
+            messageFormat: "Consider adding static modifier to all partial class declarations.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor UseCastMethodInsteadOfSelectMethod = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.UseCastMethodInsteadOfSelectMethod,
+            title: "Use 'Cast' method instead of 'Select' method.",
+            messageFormat: "Consider using 'Cast' method instead of 'Select' method.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor DeclareTypeInsideNamespace = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.DeclareTypeInsideNamespace,
+            title: "Declare type inside namespace.",
+            messageFormat: "Consider declaring '{0}' inside namespace.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Warning,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor AddBracesToSwitchSectionWithMultipleStatements = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.AddBracesToSwitchSectionWithMultipleStatements,
+            title: "Add braces to switch section with multiple statements.",
+            messageFormat: "Consider adding braces to switch section with multiple statements.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: false
+        );
+
+        public static readonly DiagnosticDescriptor CombineEnumerableWhereMethodChain = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.CombineEnumerableWhereMethodChain,
+            title: "Combine 'Enumerable.Where' method chain.",
+            messageFormat: "Consider combining 'Enumerable.Where' method chain.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor CombineEnumerableWhereMethodChainFadeOut = CombineEnumerableWhereMethodChain.CreateFadeOut();
+
+        public static readonly DiagnosticDescriptor UseStringIsNullOrEmptyMethod = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.UseStringIsNullOrEmptyMethod,
+            title: "Use 'string.IsNullOrEmpty' method.",
+            messageFormat: "Consider using 'string.IsNullOrEmpty' method.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor RemoveRedundantDelegateCreation = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.RemoveRedundantDelegateCreation,
+            title: "Remove redundant delegate creation.",
+            messageFormat: "Consider removing redundant delegate creation.",
+            category: DiagnosticCategories.General,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
+
+        public static readonly DiagnosticDescriptor RemoveRedundantDelegateCreationFadeOut = RemoveRedundantDelegateCreation.CreateFadeOut();
     }
 }

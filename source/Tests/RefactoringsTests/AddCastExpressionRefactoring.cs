@@ -1,8 +1,9 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class AddCastExpressionRefactoring
     {
@@ -13,6 +14,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
                 object value = GetObject();
 
                 ProcessString(value);
+                ProcessValue(value);
             }
 
             private object GetObject()
@@ -21,6 +23,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
             }
 
             private void ProcessString(string value)
+            {
+            }
+
+            private void ProcessValue(string value)
             {
             }
 

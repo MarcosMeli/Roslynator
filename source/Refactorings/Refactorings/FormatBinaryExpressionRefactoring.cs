@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class FormatBinaryExpressionRefactoring
     {
@@ -59,19 +59,15 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             BinaryExpressionSyntax condition,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            SyntaxTriviaList triviaList = SyntaxFactory.TriviaList(CSharpFactory.NewLineTrivia())
+                .AddRange(SyntaxHelper.GetIndentTrivia(condition))
+                .Add(CSharpFactory.IndentTrivia());
 
-            SyntaxTriviaList triviaList = SyntaxFactory.TriviaList(CSharpFactory.NewLine)
-                .AddRange(SyntaxUtility.GetIndentTrivia(condition))
-                .Add(CSharpFactory.IndentTrivia);
-
-            var rewriter = new BinaryExpressioneSyntaxRewriter(triviaList);
+            var rewriter = new SyntaxRewriter(triviaList);
 
             var newCondition = (ExpressionSyntax)rewriter.Visit(condition);
 
-            root = root.ReplaceNode(condition, newCondition);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(condition, newCondition, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> FormatOnSingleLineAsync(
@@ -79,15 +75,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             BinaryExpressionSyntax condition,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             BinaryExpressionSyntax newCondition = SyntaxRemover.RemoveWhitespaceOrEndOfLine(condition);
 
-            root = root.ReplaceNode(
+            return await document.ReplaceNodeAsync(
                 condition,
-                newCondition.WithFormatterAnnotation());
-
-            return document.WithSyntaxRoot(root);
+                newCondition.WithFormatterAnnotation(),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static bool IsFormattableKind(SyntaxKind kind)
@@ -129,13 +122,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             return binaryExpression;
         }
 
-        private class BinaryExpressioneSyntaxRewriter : CSharpSyntaxRewriter
+        private class SyntaxRewriter : CSharpSyntaxRewriter
         {
             private readonly SyntaxTriviaList _triviaList;
 
             private BinaryExpressionSyntax _previous;
 
-            public BinaryExpressioneSyntaxRewriter(SyntaxTriviaList triviaList)
+            public SyntaxRewriter(SyntaxTriviaList triviaList)
             {
                 _triviaList = triviaList;
             }

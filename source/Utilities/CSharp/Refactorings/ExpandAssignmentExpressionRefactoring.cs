@@ -8,9 +8,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class ExpandAssignmentExpressionRefactoring
     {
@@ -35,29 +35,20 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (assignmentExpression == null)
                 throw new ArgumentNullException(nameof(assignmentExpression));
 
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            ExpressionSyntax left = assignmentExpression.Left;
 
-            AssignmentExpressionSyntax newAssignmentExpression = Expand(assignmentExpression)
+            AssignmentExpressionSyntax newNode = SimpleAssignmentExpression(
+                left,
+                BinaryExpression(
+                    GetBinaryExpressionKind(assignmentExpression),
+                    left.WithoutLeadingTrivia(),
+                    assignmentExpression.Right));
+
+            newNode = newNode
                 .WithTriviaFrom(assignmentExpression)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = root.ReplaceNode(assignmentExpression, newAssignmentExpression);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static AssignmentExpressionSyntax Expand(this AssignmentExpressionSyntax assignmentExpression)
-        {
-            if (assignmentExpression == null)
-                throw new ArgumentNullException(nameof(assignmentExpression));
-
-            return
-                SimpleAssignmentExpression(
-                    assignmentExpression.Left,
-                    BinaryExpression(
-                        GetBinaryExpressionKind(assignmentExpression),
-                        assignmentExpression.Left.WithoutLeadingTrivia(),
-                        assignmentExpression.Right));
+            return await document.ReplaceNodeAsync(assignmentExpression, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static SyntaxKind GetBinaryExpressionKind(AssignmentExpressionSyntax assignmentExpression)

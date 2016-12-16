@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class SelectedSwitchSectionsRefactoring
     {
@@ -39,14 +38,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                                     break;
                                 }
 
-                                switch (SwitchStatementAnalysis.AnalyzeSection(section))
+                                switch (SyntaxAnalyzer.AnalyzeSwitchSection(section))
                                 {
-                                    case SwitchSectionAnalysisResult.AddBraces:
+                                    case BracesAnalysisResult.AddBraces:
                                         {
                                             addBraces.Add(section);
                                             break;
                                         }
-                                    case SwitchSectionAnalysisResult.RemoveBraces:
+                                    case BracesAnalysisResult.RemoveBraces:
                                         {
                                             removeBraces.Add(section);
                                             break;

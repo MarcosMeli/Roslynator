@@ -8,7 +8,7 @@
     <ProjectGuid>{7F6F6533-E406-4225-A435-DEE22C717F48}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pihrtsoft.CodeAnalysis.Metadata</RootNamespace>
+    <RootNamespace>Roslynator.Metadata</RootNamespace>
     <AssemblyName>Roslynator.Metadata</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
@@ -54,8 +54,8 @@
     <Compile Include="SyntaxInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
-    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
+    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
+    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

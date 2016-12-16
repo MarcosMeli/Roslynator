@@ -46,13 +46,6 @@
 
 ![Add cast expression](../../images/refactorings/AddCastExpressionToVariableDeclaration.png)
 
-#### Add 'ConfigureAwait(false)'
-
-* **Syntax**: awaitable method invocation
-* **Scope**: method name
-
-![Add 'ConfigureAwait(false)'](../../images/refactorings/AddConfigureAwait.png)
-
 #### Add default value to parameter
 
 * **Syntax**: parameter without default value
@@ -65,6 +58,12 @@
 * **Syntax**: return statement without expression
 
 ![Add default value to return statement](../../images/refactorings/AddDefaultValueToReturnStatement.png)
+
+#### Add exception to documentation comment
+
+* **Syntax**: throw statement
+
+![Add exception to documentation comment](../../images/refactorings/AddExceptionToDocumentationComment.png)
 
 #### Add identifier to variable declaration
 
@@ -98,6 +97,25 @@
 * **Scope**: selected class name
 
 ![Add using static directive](../../images/refactorings/AddUsingStaticDirective.png)
+
+#### Call 'ConfigureAwait(false)'
+
+* **Syntax**: awaitable method invocation
+* **Scope**: method name
+
+![Call 'ConfigureAwait(false)'](../../images/refactorings/CallConfigureAwait.png)
+
+#### Call extension method as instance method
+
+* **Syntax**: method invocation
+
+![Call extension method as instance method](../../images/refactorings/CallExtensionMethodAsInstanceMethod.png)
+
+#### Call 'To...' method
+
+* **Syntax**: argument, assignment expression, return statement, variable declaration
+
+![Call 'To...' method](../../images/refactorings/CallToMethod.png)
 
 #### Change explicit type to 'var'
 
@@ -140,6 +158,12 @@
 
 ![Change 'var' to explicit type](../../images/refactorings/ChangeVarToExplicitType.png)
 
+#### Check expression for null
+
+* **Syntax**: local declaration (identifier), assignment expression (left)
+
+![Check expression for null](../../images/refactorings/CheckExpressionForNull.png)
+
 #### Check parameter for null
 
 * **Syntax**: parameter
@@ -167,12 +191,11 @@
 
 ![Comment out statement](../../images/refactorings/CommentOutStatement.png)
 
-#### Create condition from boolean expression
+#### Copy documentation comment from base member
 
-* **Syntax**: return statement, yield return statement, expression statement
-* **Scope**: boolean expression
+* **Syntax**: constructor, method, property, indexer, event
 
-![Create condition from boolean expression](../../images/refactorings/CreateConditionFromBooleanExpression.png)
+![Copy documentation comment from base member](../../images/refactorings/CopyDocumentationCommentFromBaseMember.png)
 
 #### Duplicate argument
 
@@ -340,6 +363,20 @@
 
 ![Format parameter list](../../images/refactorings/FormatAllParametersOnSingleLine.png)
 
+#### Generate base constructors
+
+* **Syntax**: class declaration
+* **Scope**: identifier
+
+![Generate base constructors](../../images/refactorings/GenerateBaseConstructors.png)
+
+#### Generate 'OnEvent' method
+
+* **Syntax**: event
+* **Scope**: identifier
+
+![Generate 'OnEvent' method](../../images/refactorings/GenerateOnEventMethod.png)
+
 #### Generate switch sections
 
 * **Syntax**: switch statement (that is empty or contains only default section)
@@ -352,6 +389,13 @@
 * **Scope**: identifier
 
 ![Initialize local with default value](../../images/refactorings/InitializeLocalWithDefaultValue.png)
+
+#### Inline alias expression
+
+* **Syntax**: using alias directive
+* **Scope**: identifier
+
+![Inline alias expression](../../images/refactorings/InlineAliasExpression.png)
 
 #### Inline method
 
@@ -384,6 +428,19 @@
 * **Syntax**: field, property
 
 ![Introduce constructor](../../images/refactorings/IntroduceConstructor.png)
+
+#### Introduce field to lock on
+
+* **Syntax**: lock statement
+* **Scope**: missing expression
+
+![Introduce field to lock on](../../images/refactorings/IntroduceFieldToLockOn.png)
+
+#### Introduce local from statement that returns value
+
+* **Syntax**: expression statement
+
+![Introduce local from statement that returns value](../../images/refactorings/IntroduceLocalFromStatementThatReturnsValue.png)
 
 #### Make member abstract
 
@@ -422,6 +479,12 @@
 
 ![Merge if statements](../../images/refactorings/MergeIfStatements.png)
 
+#### Merge interpolation into interpolated string
+
+* **Syntax**: interpolation
+
+![Merge interpolation into interpolated string](../../images/refactorings/MergeInterpolationIntoInterpolatedString.png)
+
 #### Merge local declarations
 
 * **Syntax**: local declarations with same type
@@ -451,6 +514,13 @@
 * **Syntax**: boolean literal
 
 ![Negate boolean literal](../../images/refactorings/NegateBooleanLiteral.png)
+
+#### Negate is expression
+
+* **Syntax**: is expression
+* **Scope**: operator
+
+![Negate is expression](../../images/refactorings/NegateIsExpression.png)
 
 #### Negate operator
 
@@ -501,6 +571,12 @@
 * **Scope**: opening or closing brace
 
 ![Remove all member declarations](../../images/refactorings/RemoveAllMemberDeclarations.png)
+
+#### Remove all preprocessor directives
+
+* **Syntax**: preprocessor directive
+
+![Remove all preprocessor directives](../../images/refactorings/RemoveAllPreprocessorDirectives.png)
 
 #### Remove all region directives
 
@@ -614,6 +690,12 @@
 
 ![Remove property initializer](../../images/refactorings/RemovePropertyInitializer.png)
 
+#### Remove region
+
+* **Syntax**: region directive
+
+![Remove region](../../images/refactorings/RemoveRegion.png)
+
 #### Remove statement
 
 * **Syntax**: do statement, fixed statement, for statement, foreach statement, checked statement, if statement, lock statement, switch statement, try statement, unchecked statement, unsafe statement, using statement, while statement
@@ -681,6 +763,18 @@
 
 ![Replace 'Any/All' with 'All/Any'](../../images/refactorings/ReplaceAnyWithAllOrAllWithAny.png)
 
+#### Replace as expression with cast expression
+
+* **Syntax**: as expression
+
+![Replace as expression with cast expression](../../images/refactorings/ReplaceAsWithCast.png)
+
+#### Replace cast expression with as expression
+
+* **Syntax**: cast expression
+
+![Replace cast expression with as expression](../../images/refactorings/ReplaceCastWithAs.png)
+
 #### Replace conditional expression with expression
 
 * **Syntax**: conditional expression
@@ -714,6 +808,27 @@
 
 ![Replace do statement with while statement](../../images/refactorings/ReplaceDoStatementWithWhileStatement.png)
 
+#### Replace equals expression with string.Equals
+
+* **Syntax**: equals expression, not equals expression
+* **Scope**: operator
+
+![Replace equals expression with string.Equals](../../images/refactorings/ReplaceEqualsExpressionWithStringEquals.png)
+
+#### Replace equals expression with string.IsNullOrEmpty
+
+* **Syntax**: equals expression, not equals expression
+* **Scope**: operator
+
+![Replace equals expression with string.IsNullOrEmpty](../../images/refactorings/ReplaceEqualsExpressionWithStringIsNullOrEmpty.png)
+
+#### Replace equals expression with string.IsNullOrWhiteSpace
+
+* **Syntax**: equals expression, not equals expression
+* **Scope**: operator
+
+![Replace equals expression with string.IsNullOrWhiteSpace](../../images/refactorings/ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace.png)
+
 #### Replace field with constant
 
 * **Syntax**: read-only field
@@ -738,11 +853,23 @@
 
 ![Replace 'HasFlag' with bitwise operation](../../images/refactorings/ReplaceHasFlagWithBitwiseOperation.png)
 
+#### Replace if statement with return statement
+
+* **Syntax**: if statement
+
+![Replace if statement with return statement](../../images/refactorings/ReplaceIfStatementWithReturnStatement.png)
+
 #### Replace if-else with conditional expression
 
 * **Syntax**: conditional expression
 
 ![Replace if-else with conditional expression](../../images/refactorings/ReplaceIfElseWithConditionalExpression.png)
+
+#### Replace if-else with switch statement
+
+* **Syntax**: if statement
+
+![Replace if-else with switch statement](../../images/refactorings/ReplaceIfElseWithSwitch.png)
 
 #### Replace increment operator with decrement operator
 
@@ -750,11 +877,24 @@
 
 ![Replace increment operator with decrement operator](../../images/refactorings/ReplaceIncrementOperatorWithDecrementOperator.png)
 
+#### Replace interpolated string with interpolation expression
+
+* **Syntax**: interpolated string with single interpolation and no text
+* **Scope**: interpolation
+
+![Replace interpolated string with interpolation expression](../../images/refactorings/ReplaceInterpolatedStringWithInterpolationExpression.png)
+
 #### Replace interpolated string with string literal
 
 * **Syntax**: Interpolated string without any interpolation
 
 ![Replace interpolated string with string literal](../../images/refactorings/ReplaceInterpolatedStringWithStringLiteral.png)
+
+#### Replace method group with lambda
+
+* **Syntax**: method group
+
+![Replace method group with lambda](../../images/refactorings/ReplaceMethodGroupWithLambda.png)
 
 #### Replace method invocation with '[]'
 
@@ -769,6 +909,12 @@
 * **Scope**: method header
 
 ![Replace method with property](../../images/refactorings/ReplaceMethodWithProperty.png)
+
+#### Replace null literal expression with default expression
+
+* **Syntax**: argument
+
+![Replace null literal expression with default expression](../../images/refactorings/ReplaceNullLiteralExpressionWithDefaultExpression.png)
 
 #### Replace prefix operator to postfix operator
 
@@ -788,6 +934,12 @@
 * **Syntax**: regular string literal
 
 ![Replace regular string literal with verbatim string literal](../../images/refactorings/ReplaceRegularStringLiteralWithVerbatimStringLiteral.png)
+
+#### Replace statement with if statement
+
+* **Syntax**: return statement, yield return statement, assignment statement, local declaration statement
+
+![Replace statement with if statement](../../images/refactorings/ReplaceReturnStatementWithIfStatement.png)
 
 #### Replace string literal with character literal
 
@@ -851,6 +1003,12 @@
 * **Syntax**: selected attribute list
 
 ![Split attributes](../../images/refactorings/SplitAttributes.png)
+
+#### Split switch labels
+
+* **Syntax**: selected switch labels
+
+![Split switch labels](../../images/refactorings/SplitSwitchLabels.png)
 
 #### Split variable declaration
 

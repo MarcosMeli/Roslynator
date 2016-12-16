@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class ChangeMemberTypeTypeAccordingToReturnStatementRefactoring
     {
@@ -14,6 +14,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
         }
 
         public void SomeMethod2() => 0;
+
+        public string FooProperty
+        {
+            get { return 0; }
+        }
+
+        public string this[int index]
+        {
+            get { return 0; }
+        }
 
         private async void MethodAsync()
         {

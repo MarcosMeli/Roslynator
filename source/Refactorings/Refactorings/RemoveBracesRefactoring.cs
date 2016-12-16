@@ -1,15 +1,13 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RemoveBracesRefactoring
     {
@@ -77,7 +75,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     continue;
                 }
-                else if (EmbeddedStatementAnalysis.IsEmbeddableBlock(block))
+                else if (EmbeddedStatement.IsEmbeddableBlock(block))
                 {
                     success = true;
                 }
@@ -92,10 +90,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         private static bool CanRefactor(RefactoringContext context, BlockSyntax block)
         {
-            if (context.Span.IsEmptyOrBetweenSpans(block)
-                && EmbeddedStatementAnalysis.IsEmbeddableBlock(block))
+            if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(block)
+                && EmbeddedStatement.IsEmbeddableBlock(block))
             {
-                StatementSyntax statement = EmbeddedStatementAnalysis.GetEmbeddedStatement(block.Statements[0]);
+                StatementSyntax statement = EmbeddedStatement.GetEmbeddedStatement(block.Statements[0]);
 
                 return statement == null
                     || !statement.FullSpan.Contains(context.Span);
@@ -106,7 +104,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         private static IEnumerable<BlockSyntax> GetBlocks(IfStatementSyntax topmostIf)
         {
-            foreach (SyntaxNode node in IfElseChainAnalysis.GetChain(topmostIf))
+            foreach (SyntaxNode node in IfElseChain.GetChain(topmostIf))
             {
                 switch (node.Kind())
                 {
@@ -143,9 +141,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             switch (parent?.Kind())
             {
                 case SyntaxKind.IfStatement:
-                    return IfElseChainAnalysis.GetTopmostIf((IfStatementSyntax)parent);
+                    return IfElseChain.GetTopmostIf((IfStatementSyntax)parent);
                 case SyntaxKind.ElseClause:
-                    return IfElseChainAnalysis.GetTopmostIf((ElseClauseSyntax)parent);
+                    return IfElseChain.GetTopmostIf((ElseClauseSyntax)parent);
                 default:
                     return null;
             }
@@ -156,8 +154,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             BlockSyntax block,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             StatementSyntax statement = block.Statements[0];
 
             if (block.Parent?.IsKind(SyntaxKind.ElseClause) == true
@@ -170,18 +166,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     .WithElseKeyword(elseClause.ElseKeyword.WithoutTrailingTrivia())
                     .WithFormatterAnnotation();
 
-                SyntaxNode newRoot = oldRoot.ReplaceNode(elseClause, newElseClause);
-
-                return document.WithSyntaxRoot(newRoot);
+                return await document.ReplaceNodeAsync(elseClause, newElseClause, cancellationToken).ConfigureAwait(false);
             }
             else
             {
                 StatementSyntax newNode = statement.TrimLeadingTrivia()
                     .WithFormatterAnnotation();
 
-                SyntaxNode newRoot = oldRoot.ReplaceNode(block, newNode);
-
-                return document.WithSyntaxRoot(newRoot);
+                return await document.ReplaceNodeAsync(block, newNode, cancellationToken).ConfigureAwait(false);
             }
         }
     }

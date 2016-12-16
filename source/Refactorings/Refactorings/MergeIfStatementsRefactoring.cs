@@ -9,9 +9,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class MergeIfStatementsRefactoring
     {
@@ -65,8 +65,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ImmutableArray<IfStatementSyntax> ifStatements,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             IfStatementSyntax newIfStatement = IfStatement(
                 CreateCondition(ifStatements),
                 Block(CreateStatements(ifStatements)));
@@ -84,9 +82,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             for (int i = 1; i < ifStatements.Length; i++)
                 newStatements = newStatements.RemoveAt(index + 1);
 
-            root = root.ReplaceNode(container.Node, container.NodeWithStatements(newStatements));
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(container.Node, container.NodeWithStatements(newStatements), cancellationToken).ConfigureAwait(false);
         }
 
         private static BinaryExpressionSyntax CreateCondition(ImmutableArray<IfStatementSyntax> ifStatements)

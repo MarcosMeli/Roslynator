@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class ReplaceStringEmptyWithEmptyStringLiteralRefactoring
     {
@@ -46,14 +45,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             MemberAccessExpressionSyntax node,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            LiteralExpressionSyntax newNode = LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(string.Empty))
+            LiteralExpressionSyntax newNode = CSharpFactory.StringLiteralExpression("")
                 .WithTriviaFrom(node);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(node, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(node, newNode, cancellationToken).ConfigureAwait(false);
         }
     }
 }

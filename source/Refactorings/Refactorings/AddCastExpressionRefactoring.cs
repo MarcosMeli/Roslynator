@@ -6,57 +6,41 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddCastExpressionRefactoring
     {
         public static void RegisterRefactoring(
             RefactoringContext context,
             ExpressionSyntax expression,
-            ITypeSymbol newType,
-            SemanticModel semanticModel)
+            ITypeSymbol destinationType)
         {
-            if (!newType.IsErrorType()
-                && !newType.IsVoid())
-            {
-                Conversion conversion = semanticModel.ClassifyConversion(
-                    expression,
-                    newType,
-                    isExplicitInSource: false);
-
-                if (conversion.IsExplicit)
+            context.RegisterRefactoring(
+                $"Cast to '{destinationType.ToDisplayString(DefaultSymbolDisplayFormat.Value)}'",
+                cancellationToken =>
                 {
-                    context.RegisterRefactoring(
-                        $"Cast to '{newType.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}'",
-                        cancellationToken =>
-                        {
-                            return RefactorAsync(
-                                context.Document,
-                                expression,
-                                newType,
-                                cancellationToken);
-                        });
-                }
-            }
+                    return RefactorAsync(
+                        context.Document,
+                        expression,
+                        destinationType,
+                        cancellationToken);
+                });
         }
 
         public static async Task<Document> RefactorAsync(
             Document document,
             ExpressionSyntax expression,
-            ITypeSymbol typeSymbol,
+            ITypeSymbol destinationType,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
-            TypeSyntax type = TypeSyntaxRefactoring.CreateTypeSyntax(typeSymbol)
-                .WithSimplifierAnnotation();
+            TypeSyntax type = CSharpFactory.Type(destinationType, semanticModel, expression.SpanStart);
 
             CastExpressionSyntax castExpression = SyntaxFactory.CastExpression(type, expression)
                 .WithTriviaFrom(expression);
 
-            root = root.ReplaceNode(expression, castExpression);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(expression, castExpression, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class UsingStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -38,16 +38,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var usingStatement = (UsingStatementSyntax)context.Node;
 
-            if (RemoveBracesFromUsingStatementRefactoring.CanRefactor(usingStatement))
-            {
-                var block = (BlockSyntax)usingStatement.Statement;
-
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.SimplifyNestedUsingStatement,
-                    block.GetLocation());
-
-                context.FadeOutBraces(DiagnosticDescriptors.SimplifyNestedUsingStatementFadeOut, block);
-            }
+            SimplifyNestedUsingStatementRefactoring.Analyze(context, usingStatement);
         }
     }
 }

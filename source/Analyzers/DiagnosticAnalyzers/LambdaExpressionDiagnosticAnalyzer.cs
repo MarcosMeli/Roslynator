@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class LambdaExpressionDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -42,20 +42,19 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             if (SimplifyLambdaExpressionRefactoring.CanRefactor(lambda))
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.SimplifyLambdaExpression,
-                    lambda.Body.GetLocation());
+                CSharpSyntaxNode body = lambda.Body;
 
-                FadeOut(context, (BlockSyntax)lambda.Body);
+                context.ReportDiagnostic(DiagnosticDescriptors.SimplifyLambdaExpression, body.GetLocation());
+
+                var block = (BlockSyntax)body;
+
+                context.FadeOutBraces(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, block);
+
+                StatementSyntax statement = block.Statements[0];
+
+                if (statement.IsKind(SyntaxKind.ReturnStatement))
+                    context.FadeOutToken(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, ((ReturnStatementSyntax)statement).ReturnKeyword);
             }
-        }
-
-        private static void FadeOut(SyntaxNodeAnalysisContext context, BlockSyntax block)
-        {
-            context.FadeOutBraces(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, block);
-
-            if (block.Statements[0].IsKind(SyntaxKind.ReturnStatement))
-                context.FadeOutToken(DiagnosticDescriptors.SimplifyLambdaExpressionFadeOut, ((ReturnStatementSyntax)block.Statements[0]).ReturnKeyword);
         }
     }
 }

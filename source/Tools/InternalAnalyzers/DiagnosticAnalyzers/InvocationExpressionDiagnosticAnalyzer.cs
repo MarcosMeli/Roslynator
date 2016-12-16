@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
+namespace Roslynator.CSharp.Internal.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class InvocationExpressionDiagnosticAnalyzer : DiagnosticAnalyzer
@@ -43,7 +43,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
                     {
                         SemanticModel semanticModel = context.SemanticModel;
 
-                        INamedTypeSymbol syntaxKindSymbol = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.CodeAnalysis.CSharp.SyntaxKind");
+                        INamedTypeSymbol syntaxKindSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.Microsoft_CodeAnalysis_CSharp_SyntaxKind);
 
                         if (syntaxKindSymbol != null)
                         {
@@ -75,7 +75,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
             SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            INamedTypeSymbol syntaxNodeSymbol = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.CodeAnalysis.SyntaxNode");
+            INamedTypeSymbol syntaxNodeSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.Microsoft_CodeAnalysis_SyntaxNode);
 
             if (CanRefactor(
                 methodName,
@@ -88,7 +88,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
                 return true;
             }
 
-            INamedTypeSymbol syntaxTriviaSymbol = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.CodeAnalysis.SyntaxTrivia");
+            INamedTypeSymbol syntaxTriviaSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.Microsoft_CodeAnalysis_SyntaxTrivia);
 
             return CanRefactor(
                 methodName,
@@ -109,7 +109,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
         {
             if (typeSymbol != null)
             {
-                INamedTypeSymbol newExtensionsClassSymbol = semanticModel.Compilation.GetTypeByMetadataName($"Pihrtsoft.CodeAnalysis.{typeSymbol.Name}Extensions");
+                INamedTypeSymbol newExtensionsClassSymbol = semanticModel.Compilation.GetTypeByMetadataName($"Roslynator.{typeSymbol.Name}Extensions");
 
                 if (newExtensionsClassSymbol != null
                     && NewExtensionMethodExists(elementName, typeSymbol, newExtensionsClassSymbol))
@@ -122,7 +122,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal.DiagnosticAnalyzers
                         && methodSymbol.ReducedFrom.Parameters[0].Type.Equals(typeSymbol)
                         && methodSymbol.ReducedFrom.Parameters[1].Type.Equals(syntaxKindSymbol))
                     {
-                        INamedTypeSymbol extensionsClassSymbol = semanticModel.Compilation.GetTypeByMetadataName("Microsoft.CodeAnalysis.CSharpExtensions");
+                        INamedTypeSymbol extensionsClassSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.Microsoft_CodeAnalysis_CSharpExtensions);
 
                         if (extensionsClassSymbol != null
                             && methodSymbol.ContainingType?.Equals(extensionsClassSymbol) == true)

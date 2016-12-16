@@ -3,7 +3,7 @@
 using System;
 using System.Text;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class TextUtility
     {
@@ -243,6 +243,23 @@ namespace Pihrtsoft.CodeAnalysis
                 return value.Remove(value.Length - suffix.Length);
 
             return value;
+        }
+
+        public static string DoubleBraces(string value)
+        {
+            return value
+                .Replace("{", "{{")
+                .Replace("}", "}}");
+        }
+
+        public static string EscapeQuote(string value)
+        {
+            return value.Replace("\"", @"\" + "\"");
+        }
+
+        public static string DoubleQuote(string value)
+        {
+            return value.Replace("\"", "\"\"");
         }
     }
 }

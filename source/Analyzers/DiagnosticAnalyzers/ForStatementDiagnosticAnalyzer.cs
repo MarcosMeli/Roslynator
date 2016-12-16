@@ -6,14 +6,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ForStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.AvoidUsageOfForStatementToCreateInfiniteLoop);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticDescriptors.AvoidUsageOfForStatementToCreateInfiniteLoop,
+                    DiagnosticDescriptors.RemoveRedundantBooleanLiteral,
+                    DiagnosticDescriptors.RemoveRedundantBooleanLiteralFadeOut);
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -30,14 +39,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var forStatement = (ForStatementSyntax)context.Node;
 
-            if (forStatement.Declaration == null
-                && forStatement.Condition == null
-                && forStatement.Incrementors.Count == 0
-                && forStatement.Initializers.Count == 0)
+            AvoidUsageOfForStatementToCreateInfiniteLoopRefactoring.Analyze(context, forStatement);
+
+            ExpressionSyntax condition = forStatement.Condition;
+
+            if (condition?.IsKind(SyntaxKind.TrueLiteralExpression) == true)
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AvoidUsageOfForStatementToCreateInfiniteLoop,
-                    forStatement.ForKeyword.GetLocation());
+                context.ReportDiagnostic(DiagnosticDescriptors.RemoveRedundantBooleanLiteral, condition.GetLocation());
+                context.FadeOutNode(DiagnosticDescriptors.RemoveRedundantBooleanLiteralFadeOut, condition);
             }
         }
     }

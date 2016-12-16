@@ -4,9 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class SwitchSectionRefactoring
     {
@@ -17,6 +16,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 SelectedStatementsInfo info = SelectedStatementsInfo.Create(switchSection, context.Span);
                 await SelectedStatementsRefactoring.ComputeRefactoringAsync(context, info).ConfigureAwait(false);
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.SplitSwitchLabels))
+                SplitSwitchLabelsRefactoring.ComputeRefactoring(context, switchSection);
 
             if (context.Span.IsEmpty
                 && context.IsAnyRefactoringEnabled(
@@ -29,9 +31,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                 SyntaxList<SwitchSectionSyntax> sections = switchStatement.Sections;
 
-                switch (SwitchStatementAnalysis.AnalyzeSection(switchSection))
+                switch (SyntaxAnalyzer.AnalyzeSwitchSection(switchSection))
                 {
-                    case SwitchSectionAnalysisResult.AddBraces:
+                    case BracesAnalysisResult.AddBraces:
                         {
                             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSection))
                             {
@@ -41,7 +43,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             }
 
                             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBracesToSwitchSections)
-                                && sections.Any(f => f != switchSection && SwitchStatementAnalysis.CanAddBraces(f)))
+                                && sections.Any(f => f != switchSection && AddBracesToSwitchSectionRefactoring.CanAddBraces(f)))
                             {
                                 context.RegisterRefactoring(
                                     AddBracesToSwitchSectionsRefactoring.Title,
@@ -50,7 +52,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                             break;
                         }
-                    case SwitchSectionAnalysisResult.RemoveBraces:
+                    case BracesAnalysisResult.RemoveBraces:
                         {
                             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSection))
                             {
@@ -60,7 +62,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             }
 
                             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveBracesFromSwitchSections)
-                                && sections.Any(f => f != switchSection && SwitchStatementAnalysis.CanRemoveBraces(f)))
+                                && sections.Any(f => f != switchSection && RemoveBracesFromSwitchSectionRefactoring.CanRemoveBraces(f)))
                             {
                                 context.RegisterRefactoring(
                                     RemoveBracesFromSwitchSectionsRefactoring.Title,

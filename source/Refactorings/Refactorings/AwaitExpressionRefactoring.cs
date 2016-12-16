@@ -4,23 +4,23 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AwaitExpressionRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, AwaitExpressionSyntax awaitExpression)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddConfigureAwait))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallConfigureAwait))
             {
                 SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (AddConfigureAwaitRefactoring.CanRefactor(awaitExpression, semanticModel, context.CancellationToken))
+                if (CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, semanticModel, context.CancellationToken))
                 {
                     context.RegisterRefactoring(
-                        "Add 'ConfigureAwait(false)'",
+                        "Call 'ConfigureAwait(false)'",
                         cancellationToken =>
                         {
-                            return AddConfigureAwaitRefactoring.RefactorAsync(
+                            return CallConfigureAwaitRefactoring.RefactorAsync(
                                 context.Document,
                                 awaitExpression,
                                 context.CancellationToken);

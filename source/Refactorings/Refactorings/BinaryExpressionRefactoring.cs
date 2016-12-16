@@ -5,8 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings.ExtractCondition;
+using Roslynator.CSharp.Refactorings.ReplaceEqualsExpression;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class BinaryExpressionRefactoring
     {
@@ -26,18 +28,22 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBooleanComparison)
-                && binaryExpression.IsKind(SyntaxKind.LogicalAndExpression, SyntaxKind.LogicalOrExpression)
-                && binaryExpression.Left?.IsMissing == false
-                && binaryExpression.Right?.IsMissing == false
-                && context.SupportsSemanticModel)
+                && binaryExpression.IsKind(SyntaxKind.LogicalAndExpression, SyntaxKind.LogicalOrExpression))
             {
-                if (binaryExpression.Left.Span.Contains(context.Span))
+                ExpressionSyntax left = binaryExpression.Left;
+                ExpressionSyntax right = binaryExpression.Right;
+
+                if (left?.IsMissing == false
+                    && right?.IsMissing == false)
                 {
-                    await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, binaryExpression.Left).ConfigureAwait(false);
-                }
-                else if (binaryExpression.Right.Span.Contains(context.Span))
-                {
-                    await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, binaryExpression.Right).ConfigureAwait(false);
+                    if (left.Span.Contains(context.Span))
+                    {
+                        await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, left).ConfigureAwait(false);
+                    }
+                    else if (right.Span.Contains(context.Span))
+                    {
+                        await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, right).ConfigureAwait(false);
+                    }
                 }
             }
 
@@ -48,56 +54,60 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 NegateBinaryExpressionRefactoring.ComputeRefactoring(context, binaryExpression);
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandCoalesceExpression)
-                && binaryExpression.OperatorToken.Span.Contains(context.Span)
-                && ExpandCoalesceExpressionRefactoring.CanRefactor(binaryExpression))
+                && binaryExpression.OperatorToken.Span.Contains(context.Span))
             {
-                context.RegisterRefactoring(
-                    "Expand ??",
-                    cancellationToken =>
-                    {
-                        return ExpandCoalesceExpressionRefactoring.RefactorAsync(
-                            context.Document,
-                            binaryExpression,
-                            cancellationToken);
-                    });
+                ExpandCoalesceExpressionRefactoring.ComputeRefactoring(context, binaryExpression);
             }
 
-            if (context.IsAnyRefactoringEnabled(
-                    RefactoringIdentifiers.MergeStringLiterals,
-                    RefactoringIdentifiers.MergeStringLiteralsIntoMultilineStringLiteral)
-                && MergeStringLiteralsRefactoring.CanRefactor(context, binaryExpression))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MergeStringExpressions)
+                && context.Span.IsBetweenSpans(binaryExpression))
             {
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.MergeStringLiterals))
-                {
-                    context.RegisterRefactoring(
-                        "Merge string literals",
-                        cancellationToken => MergeStringLiteralsRefactoring.RefactorAsync(context.Document, binaryExpression, cancellationToken: cancellationToken));
-                }
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.MergeStringLiteralsIntoMultilineStringLiteral)
-                    && binaryExpression
-                        .DescendantTrivia(binaryExpression.Span)
-                        .Any(f => f.IsKind(SyntaxKind.EndOfLineTrivia)))
-                {
-                    context.RegisterRefactoring(
-                        "Merge string literals into multiline string literal",
-                        cancellationToken => MergeStringLiteralsRefactoring.RefactorAsync(context.Document, binaryExpression, multiline: true, cancellationToken: cancellationToken));
-                }
+                await MergeStringExpressionsRefactoring.ComputeRefactoringAsync(context, binaryExpression).ConfigureAwait(false);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.SwapExpressionsInBinaryExpression)
-                && SwapExpressionsRefactoring.CanRefactor(binaryExpression)
                 && context.Span.IsBetweenSpans(binaryExpression))
             {
-                context.RegisterRefactoring(
-                    "Swap expressions",
-                    cancellationToken =>
-                    {
-                        return SwapExpressionsRefactoring.RefactorAsync(
-                            context.Document,
-                            binaryExpression,
-                            cancellationToken);
-                    });
+                SwapExpressionsInBinaryExpressionRefactoring.ComputeRefactoring(context, binaryExpression);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceAsWithCast)
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(binaryExpression))
+            {
+                ReplaceAsWithCastRefactoring.ComputeRefactoring(context, binaryExpression);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.NegateIsExpression))
+                NegateIsExpressionRefactoring.ComputeRefactoring(context, binaryExpression);
+
+            if (context.Span.IsContainedInSpanOrBetweenSpans(binaryExpression.OperatorToken))
+            {
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceEqualsExpressionWithStringEquals))
+                    await ReplaceEqualsExpressionWithStringEqualsRefactoring.ComputeRefactoringAsync(context, binaryExpression).ConfigureAwait(false);
+
+                if (context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrEmpty,
+                    RefactoringIdentifiers.ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace))
+                {
+                    await ReplaceEqualsExpressionRefactoring.ComputeRefactoringsAsync(context, binaryExpression).ConfigureAwait(false);
+                }
+            }
+
+            if (!context.Span.IsBetweenSpans(binaryExpression)
+                && context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.ExtractExpressionFromCondition,
+                    RefactoringIdentifiers.MergeStringExpressions))
+            {
+                SelectedExpressions selectedExpressions = SelectedExpressions.TryCreate(binaryExpression, context.Span);
+
+                if (selectedExpressions?.Expressions.Length > 1)
+                {
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractExpressionFromCondition))
+                        ExtractConditionRefactoring.ComputeRefactoring(context, selectedExpressions);
+
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.MergeStringExpressions))
+                        await MergeStringExpressionsRefactoring.ComputeRefactoringAsync(context, selectedExpressions).ConfigureAwait(false);
+                }
             }
         }
     }

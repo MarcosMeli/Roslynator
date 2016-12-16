@@ -2,32 +2,37 @@
 
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings.ReplaceStatementWithIf;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReturnStatementRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, ReturnStatementSyntax returnStatement)
         {
-            if (context.SupportsSemanticModel)
-            {
-                if (returnStatement.Expression != null)
-                {
-                    if (context.IsAnyRefactoringEnabled(
-                        RefactoringIdentifiers.AddBooleanComparison,
-                        RefactoringIdentifiers.ChangeMemberTypeAccordingToReturnExpression,
-                        RefactoringIdentifiers.AddCastExpression))
-                    {
-                        await ReturnExpressionRefactoring.ComputeRefactoringsAsync(context, returnStatement.Expression).ConfigureAwait(false);
-                    }
+            ExpressionSyntax expression = returnStatement.Expression;
 
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.CreateConditionFromBooleanExpression))
-                        await CreateConditionFromBooleanExpressionRefactoring.ComputeRefactoringAsync(context, returnStatement.Expression).ConfigureAwait(false);
-                }
-                else if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddDefaultValueToReturnStatement))
+            if (expression != null)
+            {
+                if (context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.AddBooleanComparison,
+                    RefactoringIdentifiers.ChangeMemberTypeAccordingToReturnExpression,
+                    RefactoringIdentifiers.AddCastExpression,
+                    RefactoringIdentifiers.CallToMethod))
                 {
-                    await AddDefaultValueToReturnStatementRefactoring.ComputeRefactoringsAsync(context, returnStatement).ConfigureAwait(false);
+                    await ReturnExpressionRefactoring.ComputeRefactoringsAsync(context, expression).ConfigureAwait(false);
                 }
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceStatementWithIfStatement)
+                    && context.Span.IsBetweenSpans(returnStatement))
+                {
+                    var refactoring = new ReplaceReturnStatementWithIfStatementRefactoring();
+                    await refactoring.ComputeRefactoringAsync(context, returnStatement).ConfigureAwait(false);
+                }
+            }
+            else if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddDefaultValueToReturnStatement))
+            {
+                await AddDefaultValueToReturnStatementRefactoring.ComputeRefactoringsAsync(context, returnStatement).ConfigureAwait(false);
             }
         }
     }

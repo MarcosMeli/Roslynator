@@ -6,15 +6,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analyzers;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class RedundantEmptyLineDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.RemoveRedundantEmptyLine);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.RemoveRedundantEmptyLine); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -25,6 +27,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             context.RegisterSyntaxNodeAction(f => AnalyzeStructDeclaration(f), SyntaxKind.StructDeclaration);
             context.RegisterSyntaxNodeAction(f => AnalyzeInterfaceDeclaration(f), SyntaxKind.InterfaceDeclaration);
             context.RegisterSyntaxNodeAction(f => AnalyzeNamespaceDeclaration(f), SyntaxKind.NamespaceDeclaration);
+            context.RegisterSyntaxNodeAction(f => AnalyzeSwitchStatement(f), SyntaxKind.SwitchStatement);
         }
 
         public void AnalyzeClassDeclaration(SyntaxNodeAnalysisContext context)
@@ -32,13 +35,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            var declaration = (ClassDeclarationSyntax)context.Node;
-
-            RedundantEmptyLineAnalyzer.AnalyzeDeclaration(
-                context,
-                declaration.Members,
-                declaration.OpenBraceToken,
-                declaration.CloseBraceToken);
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, (ClassDeclarationSyntax)context.Node);
         }
 
         private void AnalyzeStructDeclaration(SyntaxNodeAnalysisContext context)
@@ -46,13 +43,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            var declaration = (StructDeclarationSyntax)context.Node;
-
-            RedundantEmptyLineAnalyzer.AnalyzeDeclaration(
-                context,
-                declaration.Members,
-                declaration.OpenBraceToken,
-                declaration.CloseBraceToken);
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, (StructDeclarationSyntax)context.Node);
         }
 
         private void AnalyzeInterfaceDeclaration(SyntaxNodeAnalysisContext context)
@@ -60,13 +51,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            var declaration = (InterfaceDeclarationSyntax)context.Node;
-
-            RedundantEmptyLineAnalyzer.AnalyzeDeclaration(
-                context,
-                declaration.Members,
-                declaration.OpenBraceToken,
-                declaration.CloseBraceToken);
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, (InterfaceDeclarationSyntax)context.Node);
         }
 
         private void AnalyzeNamespaceDeclaration(SyntaxNodeAnalysisContext context)
@@ -74,9 +59,15 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            var declaration = (NamespaceDeclarationSyntax)context.Node;
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, (NamespaceDeclarationSyntax)context.Node);
+        }
 
-            RedundantEmptyLineAnalyzer.AnalyzeNamespaceDeclaration(context, declaration);
+        private void AnalyzeSwitchStatement(SyntaxNodeAnalysisContext context)
+        {
+            if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
+                return;
+
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, (SwitchStatementSyntax)context.Node);
         }
     }
 }

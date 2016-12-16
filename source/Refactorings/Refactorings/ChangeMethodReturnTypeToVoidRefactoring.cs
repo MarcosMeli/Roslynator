@@ -7,37 +7,44 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ChangeMethodReturnTypeToVoidRefactoring
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, MethodDeclarationSyntax methodDeclaration)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeMethodReturnTypeToVoid)
-                && methodDeclaration.ReturnType?.IsVoid() == false
-                && methodDeclaration.Body?.Statements.Count > 0
-                && !methodDeclaration.IsIterator()
-                && context.SupportsSemanticModel)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeMethodReturnTypeToVoid))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                TypeSyntax returnType = methodDeclaration.ReturnType;
 
-                if (!IsAsyncMethodThatReturnsTask(methodDeclaration, semanticModel, context.CancellationToken))
+                if (returnType?.IsVoid() == false)
                 {
-                    ControlFlowAnalysis analysis = semanticModel.AnalyzeControlFlow(methodDeclaration.Body);
+                    BlockSyntax body = methodDeclaration.Body;
 
-                    if (analysis.Succeeded
-                        && analysis.ReturnStatements.All(node => IsReturnStatementWithoutExpression(node)))
+                    if (body?.Statements.Count > 0
+                        && !methodDeclaration.IsIterator())
                     {
-                        context.RegisterRefactoring(
-                            "Change return type to 'void'",
-                            cancellationToken =>
+                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                        if (!IsAsyncMethodThatReturnsTask(methodDeclaration, semanticModel, context.CancellationToken))
+                        {
+                            ControlFlowAnalysis analysis = semanticModel.AnalyzeControlFlow(body);
+
+                            if (analysis.Succeeded
+                                && analysis.ReturnStatements.All(node => IsReturnStatementWithoutExpression(node)))
                             {
-                                return TypeSyntaxRefactoring.ChangeTypeAsync(
-                                    context.Document,
-                                    methodDeclaration.ReturnType,
-                                    CSharpFactory.VoidType(),
-                                    cancellationToken);
-                            });
+                                context.RegisterRefactoring(
+                                    "Change return type to 'void'",
+                                    cancellationToken =>
+                                    {
+                                        return ChangeTypeRefactoring.ChangeTypeAsync(
+                                            context.Document,
+                                            returnType,
+                                            CSharpFactory.VoidType(),
+                                            cancellationToken);
+                                    });
+                            }
+                        }
                     }
                 }
             }
@@ -56,7 +63,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             {
                 INamedTypeSymbol taskSymbol = semanticModel
                     .Compilation
-                    .GetTypeByMetadataName("System.Threading.Tasks.Task");
+                    .GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task);
 
                 return methodSymbol.ReturnType.Equals(taskSymbol);
             }

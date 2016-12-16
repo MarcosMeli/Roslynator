@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddUsingStaticDirectiveRefactoring
     {
@@ -14,8 +14,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingStaticDirective)
                 && memberAccess.Expression?.IsMissing == false
-                && memberAccess.Name?.IsMissing == false
-                && context.SupportsSemanticModel)
+                && memberAccess.Name?.IsMissing == false)
             {
                 memberAccess = GetTopmostMemberAccessExpression(memberAccess);
 
@@ -23,13 +22,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 {
                     SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                    var typeSymbol = semanticModel
-                        .GetSymbolInfo(memberAccess.Expression, context.CancellationToken)
-                        .Symbol as INamedTypeSymbol;
+                    var typeSymbol = semanticModel.GetSymbol(memberAccess.Expression, context.CancellationToken) as INamedTypeSymbol;
 
                     if (typeSymbol?.IsStaticClass() == true
                         && (typeSymbol.IsPublic() || typeSymbol.IsInternal())
-                        && !SyntaxUtility.IsUsingStaticDirectiveInScope(memberAccess, typeSymbol, semanticModel, context.CancellationToken))
+                        && !SyntaxAnalyzer.IsUsingStaticDirectiveInScope(memberAccess, typeSymbol, semanticModel, context.CancellationToken))
                     {
                         context.RegisterRefactoring($"using static {typeSymbol.ToString()};",
                             cancellationToken =>
@@ -57,8 +54,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             SyntaxNode newRoot = oldRoot.ReplaceNode(memberAccess, newNode);
 
-            newRoot = ((CompilationUnitSyntax)newRoot)
-                .AddUsings(CSharpFactory.UsingStaticDirective(name));
+            newRoot = ((CompilationUnitSyntax)newRoot).AddUsings(CSharpFactory.UsingStaticDirective(name));
 
             return document.WithSyntaxRoot(newRoot);
         }

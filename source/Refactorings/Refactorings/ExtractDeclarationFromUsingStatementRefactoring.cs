@@ -7,17 +7,46 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ExtractDeclarationFromUsingStatementRefactoring
     {
+        public static async Task ComputeRefactoringAsync(RefactoringContext context, UsingStatementSyntax usingStatement)
+        {
+            VariableDeclarationSyntax declaration = usingStatement.Declaration;
+
+            if (declaration != null
+                && usingStatement.IsParentKind(SyntaxKind.Block))
+            {
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                if (semanticModel.ContainsDiagnostic(
+                    declaration.Span,
+                    CSharpErrorCodes.TypeUsedInUsingStatementMustBeImplicitlyConvertibleToIDisposable,
+                    context.CancellationToken))
+                {
+                    if (context.Span.IsContainedInSpanOrBetweenSpans(declaration))
+                        RegisterRefactoring(context, usingStatement);
+                }
+                else if (context.Span.IsBetweenSpans(declaration))
+                {
+                    RegisterRefactoring(context, usingStatement);
+                }
+            }
+        }
+
+        private static void RegisterRefactoring(RefactoringContext context, UsingStatementSyntax usingStatement)
+        {
+            context.RegisterRefactoring(
+                "Extract local declaration",
+                cancellationToken => RefactorAsync(context.Document, usingStatement, cancellationToken));
+        }
+
         public static async Task<Document> RefactorAsync(
             Document document,
             UsingStatementSyntax usingStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var block = (BlockSyntax)usingStatement.Parent;
 
             int index = block.Statements.IndexOf(usingStatement);
@@ -42,9 +71,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithStatements(newBlock.Statements.InsertRange(index, statements))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = root.ReplaceNode(block, newBlock);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(block, newBlock, cancellationToken).ConfigureAwait(false);
         }
 
         private static IEnumerable<StatementSyntax> GetStatements(UsingStatementSyntax usingStatement)

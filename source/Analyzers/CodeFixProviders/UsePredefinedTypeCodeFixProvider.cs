@@ -2,16 +2,14 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(UsePredefinedTypeCodeFixProvider))]
     [Shared]
@@ -28,12 +26,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
 
             SyntaxNode node = root.FindNode(context.Span, findInsideTrivia: true, getInnermostNodeForTie: true);
 
-            if (node != null
-                && node.IsKind(
+            if (node?.IsKind(
                     SyntaxKind.QualifiedName,
                     SyntaxKind.IdentifierName,
-                    SyntaxKind.SimpleMemberAccessExpression)
-                && context.Document.SupportsSemanticModel)
+                    SyntaxKind.SimpleMemberAccessExpression) == true)
             {
                 SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
 
@@ -41,33 +37,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                     .GetSymbolInfo(node, context.CancellationToken)
                     .Symbol as INamedTypeSymbol;
 
-                if (namedTypeSymbol?.IsPredefinedType() == true)
+                if (namedTypeSymbol?.SupportsPredefinedType() == true)
                 {
                     CodeAction codeAction = CodeAction.Create(
-                        $"Use predefined type '{namedTypeSymbol.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}'",
-                        cancellationToken => RefactorAsync(context.Document, node, namedTypeSymbol, cancellationToken),
+                        $"Use predefined type '{namedTypeSymbol.ToDisplayString(DefaultSymbolDisplayFormat.Value)}'",
+                        cancellationToken => UsePredefinedTypeRefactoring.RefactorAsync(context.Document, node, namedTypeSymbol, cancellationToken),
                         DiagnosticIdentifiers.UsePredefinedType + EquivalenceKeySuffix);
 
                     context.RegisterCodeFix(codeAction, context.Diagnostics);
                 }
             }
-        }
-
-        private static async Task<Document> RefactorAsync(
-            Document document,
-            SyntaxNode node,
-            ITypeSymbol typeSymbol,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            TypeSyntax newType = TypeSyntaxRefactoring.CreateTypeSyntax(typeSymbol)
-                .WithTriviaFrom(node)
-                .WithFormatterAnnotation();
-
-            SyntaxNode newRoot = root.ReplaceNode(node, newType);
-
-            return document.WithSyntaxRoot(newRoot);
         }
     }
 }

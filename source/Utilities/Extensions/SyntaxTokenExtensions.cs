@@ -9,18 +9,42 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
-using Pihrtsoft.CodeAnalysis.CSharp;
+using Roslynator.CSharp;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class SyntaxTokenExtensions
     {
+        public static bool IsNoneKind(this SyntaxToken token)
+        {
+            return Microsoft.CodeAnalysis.CSharpExtensions.IsKind(token, SyntaxKind.None);
+        }
+
+        public static SyntaxToken PrependLeadingTrivia(this SyntaxToken token, IEnumerable<SyntaxTrivia> trivia)
+        {
+            if (trivia == null)
+                throw new ArgumentNullException(nameof(trivia));
+
+            return token.WithLeadingTrivia(trivia.Concat(token.LeadingTrivia));
+        }
+
+        public static SyntaxToken PrependLeadingTrivia(this SyntaxToken token, SyntaxTrivia trivia)
+        {
+            return token.WithLeadingTrivia(token.LeadingTrivia.Insert(0, trivia));
+        }
+
         public static SyntaxToken AppendTrailingTrivia(this SyntaxToken token, IEnumerable<SyntaxTrivia> trivia)
         {
             if (trivia == null)
                 throw new ArgumentNullException(nameof(trivia));
 
             return token.WithTrailingTrivia(token.TrailingTrivia.AddRange(trivia));
+        }
+
+        public static SyntaxToken AppendTrailingTrivia(this SyntaxToken token, SyntaxTrivia trivia)
+        {
+            return token.WithTrailingTrivia(token.TrailingTrivia.Add(trivia));
         }
 
         public static IEnumerable<SyntaxTrivia> GetLeadingAndTrailingTrivia(this SyntaxToken token)
@@ -145,7 +169,7 @@ namespace Pihrtsoft.CodeAnalysis
 
         public static SyntaxToken WithTrailingNewLine(this SyntaxToken token)
         {
-            return token.WithTrailingTrivia(CSharpFactory.NewLine);
+            return token.WithTrailingTrivia(CSharpFactory.NewLineTrivia());
         }
 
         public static SyntaxToken WithFormatterAnnotation(this SyntaxToken token)
@@ -161,6 +185,11 @@ namespace Pihrtsoft.CodeAnalysis
         public static SyntaxToken WithRenameAnnotation(this SyntaxToken token)
         {
             return token.WithAdditionalAnnotations(RenameAnnotation.Create());
+        }
+
+        public static SyntaxTokenList ToSyntaxTokenList(this IEnumerable<SyntaxToken> tokens)
+        {
+            return TokenList(tokens);
         }
     }
 }

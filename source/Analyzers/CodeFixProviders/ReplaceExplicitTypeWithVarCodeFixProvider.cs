@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ReplaceExplicitTypeWithVarCodeFixProvider))]
     [Shared]
@@ -33,7 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             {
                 CodeAction codeAction = CodeAction.Create(
                     "Change type to 'var'",
-                    cancellationToken => TypeSyntaxRefactoring.ChangeTypeToVarAsync(context.Document, variableDeclaration.Type, cancellationToken),
+                    cancellationToken => ChangeTypeRefactoring.ChangeTypeToVarAsync(context.Document, variableDeclaration.Type, cancellationToken),
                     DiagnosticIdentifiers.UseVarInsteadOfExplicitType + EquivalenceKeySuffix);
 
                 context.RegisterCodeFix(codeAction, context.Diagnostics);

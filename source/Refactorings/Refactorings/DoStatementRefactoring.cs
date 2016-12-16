@@ -3,18 +3,18 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class DoStatementRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, DoStatementSyntax doStatement)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBooleanComparison)
-                && doStatement.Condition != null
-                && doStatement.Condition.Span.Contains(context.Span)
-                && context.SupportsSemanticModel)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBooleanComparison))
             {
-                await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, doStatement.Condition).ConfigureAwait(false);
+                ExpressionSyntax condition = doStatement.Condition;
+
+                if (condition?.Span.Contains(context.Span) == true)
+                    await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, condition).ConfigureAwait(false);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceDoStatementWithWhileStatement)

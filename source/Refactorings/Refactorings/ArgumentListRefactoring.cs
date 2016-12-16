@@ -3,9 +3,9 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings.NodeInList;
+using Roslynator.CSharp.Refactorings.NodeInList;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ArgumentListRefactoring
     {
@@ -44,7 +44,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 }
                 else
                 {
-                    string title = arguments.Count == 1
+                    string title = (arguments.Count == 1)
                             ? "Format argument on a single line"
                             : "Format all arguments on a single line";
 

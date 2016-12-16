@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class IntroduceAndInitializeRefactoring
     {
@@ -16,6 +16,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
             {
                 if (value2 == null)
                     throw new ArgumentNullException(nameof(value2));
+            }
+
+            static Entity(string value)
+            {
             }
         }
     }

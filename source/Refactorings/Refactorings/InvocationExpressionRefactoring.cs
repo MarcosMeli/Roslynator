@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod;
+using Roslynator.CSharp.Refactorings.InlineMethod;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class InvocationExpressionRefactoring
     {
@@ -15,21 +15,25 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.ReplaceMethodInvocationWithElementAccess,
                     RefactoringIdentifiers.ReplaceAnyWithAllOrAllWithAny,
-                    RefactoringIdentifiers.AddConfigureAwait)
-                && invocationExpression.Expression != null
-                && invocationExpression.ArgumentList != null
-                && context.SupportsSemanticModel)
+                    RefactoringIdentifiers.CallExtensionMethodAsInstanceMethod))
             {
                 ExpressionSyntax expression = invocationExpression.Expression;
 
-                if (expression.IsKind(SyntaxKind.SimpleMemberAccessExpression)
-                    && ((MemberAccessExpressionSyntax)expression).Name?.Span.Contains(context.Span) == true)
+                if (expression != null
+                    && invocationExpression.ArgumentList != null)
                 {
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceMethodInvocationWithElementAccess))
-                        await ReplaceMethodInvocationWithElementAccessRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
+                    if (expression.IsKind(SyntaxKind.SimpleMemberAccessExpression)
+                        && ((MemberAccessExpressionSyntax)expression).Name?.Span.Contains(context.Span) == true)
+                    {
+                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceMethodInvocationWithElementAccess))
+                            await ReplaceMethodInvocationWithElementAccessRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
 
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceAnyWithAllOrAllWithAny))
-                        await ReplaceAnyWithAllOrAllWithAnyRefactoring.ComputeRefactoringAsync(context, invocationExpression).ConfigureAwait(false);
+                        if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceAnyWithAllOrAllWithAny))
+                            await ReplaceAnyWithAllOrAllWithAnyRefactoring.ComputeRefactoringAsync(context, invocationExpression).ConfigureAwait(false);
+                    }
+
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.CallExtensionMethodAsInstanceMethod))
+                        await CallExtensionMethodAsInstanceMethodRefactoring.ComputeRefactoringAsync(context, invocationExpression).ConfigureAwait(false);
                 }
             }
 
@@ -39,13 +43,26 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 await ReplaceStringFormatWithInterpolatedStringRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
             }
 
-            await ReplaceHasFlagWithBitwiseOperationRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
-
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.InlineMethod)
-                && context.SupportsSemanticModel)
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceHasFlagWithBitwiseOperation))
             {
-                await InlineMethodRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                if (ReplaceHasFlagWithBitwiseOperationRefactoring.CanRefactor(invocationExpression, semanticModel, context.CancellationToken))
+                {
+                    context.RegisterRefactoring(
+                        ReplaceHasFlagWithBitwiseOperationRefactoring.Title,
+                        cancellationToken =>
+                        {
+                            return ReplaceHasFlagWithBitwiseOperationRefactoring.RefactorAsync(
+                                context.Document,
+                                invocationExpression,
+                                cancellationToken);
+                        });
+                }
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.InlineMethod))
+                await InlineMethodRefactoring.ComputeRefactoringsAsync(context, invocationExpression).ConfigureAwait(false);
         }
     }
 }

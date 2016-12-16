@@ -2,19 +2,31 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RegionDirectiveTriviaRefactoring
     {
         public static void ComputeRefactorings(RefactoringContext context)
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveAllRegionDirectives)
-                && context.Root.IsKind(SyntaxKind.CompilationUnit))
+                && context.IsRootCompilationUnit)
             {
                 context.RegisterRefactoring(
                     "Remove all region directives",
                     cancellationToken => SyntaxRemover.RemoveRegionDirectivesAsync(context.Document, cancellationToken));
+            }
+        }
+
+        public static void ComputeRefactorings(RefactoringContext context, RegionDirectiveTriviaSyntax regionDirective)
+        {
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RemoveRegion)
+                && context.IsRootCompilationUnit)
+            {
+                context.RegisterRefactoring(
+                    "Remove region",
+                    cancellationToken => SyntaxRemover.RemoveRegionAsync(context.Document, regionDirective, cancellationToken));
             }
         }
     }

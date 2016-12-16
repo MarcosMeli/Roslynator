@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class FormatAccessorBraceOnSingleLineRefactoring
     {
@@ -14,15 +14,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AccessorDeclarationSyntax accessor,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             AccessorDeclarationSyntax newAccessor = SyntaxRemover.RemoveWhitespaceOrEndOfLine(accessor)
                 .WithTriviaFrom(accessor)
                 .WithFormatterAnnotation();
 
-            root = root.ReplaceNode(accessor, newAccessor);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(accessor, newAccessor, cancellationToken).ConfigureAwait(false);
         }
     }
 }

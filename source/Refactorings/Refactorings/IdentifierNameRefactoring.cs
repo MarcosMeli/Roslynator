@@ -6,21 +6,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class IdentifierNameRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, IdentifierNameSyntax identifierName)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameBackingFieldAccordingToPropertyName)
-                && context.SupportsSemanticModel)
-            {
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameBackingFieldAccordingToPropertyName))
                 await RenameFieldAccordingToPropertyNameAsync(context, identifierName).ConfigureAwait(false);
-            }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
-                && context.Span.IsEmpty
-                && context.SupportsSemanticModel)
+                && context.Span.IsEmpty)
             {
                 await AddUsingDirectiveRefactoring.ComputeRefactoringsAsync(context, identifierName).ConfigureAwait(false);
             }
@@ -49,24 +45,24 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                         if (propertySymbol != null
                             && fieldSymbol.IsStatic == propertySymbol.IsStatic
-                            && object.Equals(fieldSymbol.ContainingType, propertySymbol.ContainingType))
+                            && fieldSymbol.ContainingType == propertySymbol.ContainingType)
                         {
                             string newName = TextUtility.ToCamelCase(propertySymbol.Name, context.Settings.PrefixFieldIdentifierWithUnderscore);
 
-                            if (!string.Equals(newName, fieldSymbol.Name, StringComparison.Ordinal))
+                            if (!string.Equals(fieldSymbol.Name, newName, StringComparison.Ordinal))
                             {
-                                string fieldName = identifierName.Identifier.ValueText;
+                                bool isUnique = await NameGenerator.IsUniqueMemberNameAsync(
+                                    fieldSymbol,
+                                    newName,
+                                    context.Solution,
+                                    context.CancellationToken).ConfigureAwait(false);
 
-                                context.RegisterRefactoring(
-                                    $"Rename field to '{newName}'",
-                                    cancellationToken =>
-                                    {
-                                        return SymbolRenamer.RenameAsync(
-                                            context.Document,
-                                            fieldSymbol,
-                                            newName,
-                                            cancellationToken);
-                                    });
+                                if (isUnique)
+                                {
+                                    context.RegisterRefactoring(
+                                        $"Rename field to '{newName}'",
+                                        cancellationToken => SymbolRenamer.RenameAsync(context.Document, fieldSymbol, newName, cancellationToken));
+                                }
                             }
                         }
                     }

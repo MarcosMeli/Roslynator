@@ -5,17 +5,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
+namespace Roslynator.CSharp.SyntaxRewriters
 {
     public sealed class CommentRemover : CSharpSyntaxRewriter
     {
-        private static readonly SyntaxKind[] _syntaxKindSequence = new SyntaxKind[]
-        {
-            SyntaxKind.SingleLineCommentTrivia,
-            SyntaxKind.WhitespaceTrivia,
-            SyntaxKind.EndOfLineTrivia
-        };
-
         private CommentRemover(SyntaxNode node, CommentRemoveOptions removeOptions, TextSpan span)
             : base(visitIntoStructuredTrivia: true)
         {
@@ -56,7 +49,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
                     case SyntaxKind.MultiLineCommentTrivia:
                         {
                             if (RemoveOptions != CommentRemoveOptions.Documentation)
-                                return CSharpFactory.EmptyWhitespaceTrivia;
+                                return CSharpFactory.EmptyWhitespaceTrivia();
 
                             break;
                         }
@@ -64,14 +57,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
                     case SyntaxKind.MultiLineDocumentationCommentTrivia:
                         {
                             if (RemoveOptions != CommentRemoveOptions.AllExceptDocumentation)
-                                return CSharpFactory.EmptyWhitespaceTrivia;
+                                return CSharpFactory.EmptyWhitespaceTrivia();
 
                             break;
                         }
                     case SyntaxKind.EndOfLineTrivia:
                         {
-                            if (ShouldRemoveEndOfLine(span, _syntaxKindSequence))
-                                return CSharpFactory.EmptyWhitespaceTrivia;
+                            if (RemoveOptions != CommentRemoveOptions.Documentation
+                                && ShouldRemoveEndOfLine(span))
+                            {
+                                return CSharpFactory.EmptyWhitespaceTrivia();
+                            }
 
                             break;
                         }
@@ -81,19 +77,23 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
             return base.VisitTrivia(trivia);
         }
 
-        private bool ShouldRemoveEndOfLine(TextSpan span, SyntaxKind[] kinds)
+        private bool ShouldRemoveEndOfLine(TextSpan span)
         {
-            foreach (SyntaxKind kind in kinds)
+            return ShouldRemoveEndOfLine(SyntaxKind.SingleLineCommentTrivia, ref span)
+                && ShouldRemoveEndOfLine(SyntaxKind.WhitespaceTrivia, ref span)
+                && ShouldRemoveEndOfLine(SyntaxKind.EndOfLineTrivia, ref span);
+        }
+
+        private bool ShouldRemoveEndOfLine(SyntaxKind kind, ref TextSpan span)
+        {
+            if (span.Start > 0)
             {
-                if (span.Start > 0)
-                {
-                    SyntaxTrivia trivia = Node.FindTrivia(span.Start - 1);
+                SyntaxTrivia trivia = Node.FindTrivia(span.Start - 1);
 
-                    if (!trivia.IsKind(kind))
-                        return false;
+                if (trivia.Kind() != kind)
+                    return false;
 
-                    span = trivia.Span;
-                }
+                span = trivia.Span;
             }
 
             return true;

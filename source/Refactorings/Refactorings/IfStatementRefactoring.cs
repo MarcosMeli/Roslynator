@@ -2,9 +2,9 @@
 
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
+using Roslynator.CSharp.Refactorings.ReplaceIfWithStatement;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class IfStatementRefactoring
     {
@@ -12,32 +12,28 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.SwapStatementsInIfElse,
-                    RefactoringIdentifiers.ReplaceIfElseWithConditionalExpression)
-                && IfElseChainAnalysis.IsTopmostIf(ifStatement)
+                    RefactoringIdentifiers.ReplaceIfElseWithAssignment,
+                    RefactoringIdentifiers.ReplaceIfStatementWithReturnStatement,
+                    RefactoringIdentifiers.ReplaceIfElseWithSwitch)
+                && IfElseChain.IsTopmostIf(ifStatement)
                 && context.Span.IsBetweenSpans(ifStatement))
             {
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithConditionalExpression))
-                    ReplaceIfElseWithConditionalExpressionRefactoring.ComputeRefactoring(context, ifStatement);
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfStatementWithReturnStatement))
+                    ReplaceIfWithStatementRefactoring.ComputeRefactoring(context, ifStatement);
 
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.SwapStatementsInIfElse)
-                    && SwapStatementInIfElseRefactoring.CanRefactor(ifStatement))
-                {
-                    context.RegisterRefactoring(
-                        "Swap statements in if-else",
-                        cancellationToken =>
-                        {
-                            return SwapStatementInIfElseRefactoring.RefactorAsync(
-                                context.Document,
-                                ifStatement,
-                                cancellationToken);
-                        });
-                }
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithAssignment))
+                    ReplaceIfElseWithAssignmentRefactoring.ComputeRefactoring(context, ifStatement);
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.SwapStatementsInIfElse))
+                    SwapStatementInIfElseRefactoring.ComputeRefactoring(context, ifStatement);
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceIfElseWithSwitch))
+                    await ReplaceIfElseWithSwitchRefactoring.ComputeRefactoringAsync(context, ifStatement).ConfigureAwait(false);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBooleanComparison)
                 && ifStatement.Condition != null
-                && ifStatement.Condition.Span.Contains(context.Span)
-                && context.SupportsSemanticModel)
+                && ifStatement.Condition.Span.Contains(context.Span))
             {
                 await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, ifStatement.Condition).ConfigureAwait(false);
             }

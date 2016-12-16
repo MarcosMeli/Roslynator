@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AttributeArgumentParameterNameRefactoring
     {
@@ -23,8 +23,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (context.IsAnyRefactoringEnabled(
                     RefactoringIdentifiers.AddParameterNameToArgument,
                     RefactoringIdentifiers.RemoveParameterNameFromArgument)
-                && !context.Span.IsEmpty
-                && context.SupportsSemanticModel)
+                && !context.Span.IsEmpty)
             {
                 List<AttributeArgumentSyntax> arguments = null;
 
@@ -86,16 +85,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeArgumentSyntax[] arguments,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
             AttributeArgumentListSyntax newArgumentList = AddParameterNameSyntaxRewriter.VisitNode(argumentList, arguments, semanticModel)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(argumentList, newArgumentList);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(argumentList, newArgumentList, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> RemoveParameterNameFromArgumentsAsync(
@@ -104,14 +99,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeArgumentSyntax[] arguments,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             AttributeArgumentListSyntax newArgumentList = RemoveParameterNameSyntaxRewriter.VisitNode(argumentList, arguments)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(argumentList, newArgumentList);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(argumentList, newArgumentList, cancellationToken).ConfigureAwait(false);
         }
 
         private static AttributeArgumentSyntax AddParameterName(

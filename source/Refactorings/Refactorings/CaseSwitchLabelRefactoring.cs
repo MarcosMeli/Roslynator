@@ -2,30 +2,36 @@
 
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class CaseSwitchLabelRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, CaseSwitchLabelSyntax caseLabel)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddCastExpression)
-                && caseLabel.Value?.Span.Contains(context.Span) == true)
+            if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.AddCastExpression, RefactoringIdentifiers.CallToMethod))
             {
-                var switchStatement = caseLabel.Parent?.Parent as SwitchStatementSyntax;
+                ExpressionSyntax value = caseLabel.Value;
 
-                if (switchStatement?.Expression?.IsMissing == false)
+                if (value?.Span.Contains(context.Span) == true)
                 {
-                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                    var switchStatement = caseLabel.Parent?.Parent as SwitchStatementSyntax;
 
-                    ITypeSymbol typeSymbol = semanticModel
-                        .GetTypeInfo(switchStatement.Expression, context.CancellationToken)
-                        .Type;
+                    if (switchStatement != null)
+                    {
+                        ExpressionSyntax expression = switchStatement.Expression;
 
-                    if (typeSymbol?.IsErrorType() == false)
-                        AddCastExpressionRefactoring.RegisterRefactoring(context, caseLabel.Value, typeSymbol, semanticModel);
+                        if (expression?.IsMissing == false)
+                        {
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+                            if (typeSymbol?.IsErrorType() == false)
+                                ModifyExpressionRefactoring.ComputeRefactoring(context, value, typeSymbol, semanticModel);
+                        }
+                    }
                 }
             }
         }

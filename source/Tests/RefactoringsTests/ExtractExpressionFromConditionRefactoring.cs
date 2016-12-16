@@ -2,7 +2,7 @@
 
 using System;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class ExtractExpressionFromConditionRefactoring
     {
@@ -57,7 +57,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
 
         private static void Do()
         {
-            throw new NotImplementedException();
         }
     }
 }

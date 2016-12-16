@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.WrapSelectedLines
+namespace Roslynator.CSharp.Refactorings.WrapSelectedLines
 {
     internal abstract class SelectedLinesRefactoring
     {
@@ -55,15 +55,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.WrapSelectedLines
             SelectedLinesInfo info,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            SourceText sourceText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-
             ImmutableArray<TextChange> textChanges = GetTextChanges(info.SelectedLines());
 
-            SourceText newSourceText = sourceText.WithChanges(textChanges);
-
-            return document.WithText(newSourceText);
+            return await document.WithTextChangesAsync(textChanges, cancellationToken).ConfigureAwait(false);
         }
     }
 }

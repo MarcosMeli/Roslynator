@@ -6,16 +6,16 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AwaitExpressionDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(DiagnosticDescriptors.AddConfigureAwait); }
+            get { return ImmutableArray.Create(DiagnosticDescriptors.CallConfigureAwait); }
         }
 
         public override void Initialize(AnalysisContext context)
@@ -33,10 +33,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var awaitExpression = (AwaitExpressionSyntax)context.Node;
 
-            if (AddConfigureAwaitRefactoring.CanRefactor(awaitExpression, context.SemanticModel, context.CancellationToken))
+            if (CallConfigureAwaitRefactoring.CanRefactor(awaitExpression, context.SemanticModel, context.CancellationToken))
             {
                 context.ReportDiagnostic(
-                    DiagnosticDescriptors.AddConfigureAwait,
+                    DiagnosticDescriptors.CallConfigureAwait,
                     awaitExpression.Expression.GetLocation());
             }
         }

@@ -7,13 +7,15 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ArrowExpressionClauseDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.AvoidMultilineExpressionBody);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.AvoidMultilineExpressionBody); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -32,15 +34,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             ExpressionSyntax expression = arrowExpressionClause.Expression;
 
-            if (expression == null)
-                return;
-
-            if (expression.IsMultiLine())
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AvoidMultilineExpressionBody,
-                    expression.GetLocation());
-            }
+            if (expression?.IsMultiLine() == true)
+                context.ReportDiagnostic(DiagnosticDescriptors.AvoidMultilineExpressionBody, expression.GetLocation());
         }
     }
 }

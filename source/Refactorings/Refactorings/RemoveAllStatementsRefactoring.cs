@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RemoveAllStatementsRefactoring
     {
@@ -80,13 +80,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             MemberDeclarationSyntax member,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             MemberDeclarationSyntax newNode = RemoveAllStatements(member);
 
-            SyntaxNode newRoot = root.ReplaceNode(member, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(member, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static MemberDeclarationSyntax RemoveAllStatements(MemberDeclarationSyntax member)

@@ -3,7 +3,7 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class WhileStatementRefactoring
     {
@@ -11,8 +11,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddBooleanComparison)
                 && whileStatement.Condition != null
-                && whileStatement.Condition.Span.Contains(context.Span)
-                && context.SupportsSemanticModel)
+                && whileStatement.Condition.Span.Contains(context.Span))
             {
                 await AddBooleanComparisonRefactoring.ComputeRefactoringAsync(context, whileStatement.Condition).ConfigureAwait(false);
             }

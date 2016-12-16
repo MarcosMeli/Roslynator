@@ -4,14 +4,17 @@ using System;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class FieldSymbolDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.RenamePrivateFieldAccordingToCamelCaseWithUnderscore);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.RenamePrivateFieldAccordingToCamelCaseWithUnderscore); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -28,16 +31,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var fieldSymbol = (IFieldSymbol)context.Symbol;
 
-            if (!fieldSymbol.IsConst
-                && !fieldSymbol.IsImplicitlyDeclared
-                && fieldSymbol.IsPrivate()
-                && !string.IsNullOrEmpty(fieldSymbol.Name)
-                && !TextUtility.IsValidCamelCaseWithUnderscore(fieldSymbol.Name))
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.RenamePrivateFieldAccordingToCamelCaseWithUnderscore,
-                    fieldSymbol.Locations[0]);
-            }
+            RenamePrivateFieldAccordingToCamelCaseWithUnderscoreRefactoring.Analyze(context, fieldSymbol);
         }
     }
 }

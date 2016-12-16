@@ -2,22 +2,30 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Linq;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(SwitchSectionCodeFixProvider))]
     [Shared]
     public class SwitchSectionCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.RemoveRedundantDefaultSwitchSection);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticIdentifiers.RemoveRedundantDefaultSwitchSection,
+                    DiagnosticIdentifiers.DefaultLabelShouldBeLastLabelInSwitchSection,
+                    DiagnosticIdentifiers.AddBracesToSwitchSectionWithMultipleStatements);
+            }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -29,77 +37,47 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
                 .FirstAncestorOrSelf<SwitchSectionSyntax>();
 
+            Debug.Assert(switchSection != null, $"{nameof(switchSection)} is null");
+
             if (switchSection == null)
                 return;
 
-            CodeAction codeAction = CodeAction.Create(
-                "Remove redundant switch section",
-                cancellationToken =>
-                {
-                    return RemoveRedundantSwitchSectionAsync(
-                        context.Document,
-                        switchSection,
-                        cancellationToken);
-                },
-                DiagnosticIdentifiers.RemoveRedundantDefaultSwitchSection + EquivalenceKeySuffix);
-
-            context.RegisterCodeFix(codeAction, context.Diagnostics);
-        }
-
-        private static async Task<Document> RemoveRedundantSwitchSectionAsync(
-            Document document,
-            SwitchSectionSyntax switchSection,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            var switchStatement = (SwitchStatementSyntax)switchSection.Parent;
-
-            SwitchStatementSyntax newSwitchStatement = GetNewSwitchStatement(switchSection, switchStatement);
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(switchStatement, newSwitchStatement);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static SwitchStatementSyntax GetNewSwitchStatement(SwitchSectionSyntax switchSection, SwitchStatementSyntax switchStatement)
-        {
-            if (switchSection.GetLeadingTrivia().All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            foreach (Diagnostic diagnostic in context.Diagnostics)
             {
-                int index = switchStatement.Sections.IndexOf(switchSection);
-
-                if (index > 0)
+                switch (diagnostic.Id)
                 {
-                    SwitchSectionSyntax previousSection = switchStatement.Sections[index - 1];
+                    case DiagnosticIdentifiers.RemoveRedundantDefaultSwitchSection:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Remove redundant switch section",
+                                cancellationToken => RemoveRedundantDefaultSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-                    if (previousSection.GetTrailingTrivia().All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                    {
-                        SwitchStatementSyntax newSwitchStatement = switchStatement.RemoveNode(
-                            switchSection,
-                            SyntaxRemoveOptions.KeepNoTrivia);
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.DefaultLabelShouldBeLastLabelInSwitchSection:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Move default label to the last position",
+                                cancellationToken => DefaultLabelShouldBeLastLabelInSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-                        previousSection = newSwitchStatement.Sections[index - 1];
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.AddBracesToSwitchSectionWithMultipleStatements:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                AddBracesToSwitchSectionRefactoring.Title,
+                                cancellationToken => AddBracesToSwitchSectionRefactoring.RefactorAsync(context.Document, switchSection, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-                        return newSwitchStatement.ReplaceNode(
-                            previousSection,
-                            previousSection.WithTrailingTrivia(switchSection.GetTrailingTrivia()));
-                    }
-                }
-                else
-                {
-                    SyntaxToken openBrace = switchStatement.OpenBraceToken;
-
-                    if (!openBrace.IsMissing
-                        && openBrace.TrailingTrivia.All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                    {
-                        return switchStatement
-                            .RemoveNode(switchSection, SyntaxRemoveOptions.KeepNoTrivia)
-                            .WithOpenBraceToken(openBrace.WithTrailingTrivia(switchSection.GetTrailingTrivia()));
-                    }
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
                 }
             }
-
-            return switchStatement.RemoveNode(switchSection, SyntaxRemoveOptions.KeepExteriorTrivia);
         }
     }
 }

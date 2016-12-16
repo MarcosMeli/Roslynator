@@ -6,15 +6,22 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class DoStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.AvoidUsageOfDoStatementToCreateInfiniteLoop);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticDescriptors.AvoidUsageOfDoStatementToCreateInfiniteLoop,
+                    DiagnosticDescriptors.AddEmptyLineAfterLastStatementInDoStatement);
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -37,6 +44,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
                     DiagnosticDescriptors.AvoidUsageOfDoStatementToCreateInfiniteLoop,
                     doStatement.DoKeyword.GetLocation());
             }
+
+            AddEmptyLineAfterLastStatementInDoStatementRefactoring.Analyze(context, doStatement);
         }
     }
 }

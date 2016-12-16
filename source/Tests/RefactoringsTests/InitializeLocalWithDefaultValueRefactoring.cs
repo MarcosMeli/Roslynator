@@ -4,7 +4,7 @@ using System;
 using System.Text;
 using System.Text.RegularExpressions;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
+namespace Roslynator.CSharp.Refactorings.Tests
 {
     internal class InitializeLocalWithDefaultValueRefactoring
     {
@@ -14,7 +14,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
 
             RegexOptions options2 , options3
 
-            RegexOptions options4, options5 ;
+            System.Text.RegularExpressions.RegexOptions options4, options5 ;
 
             bool condition 
 
@@ -26,7 +26,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
 
             char ch 
 
-                int? ni
+            int? ni
 
             int i
 

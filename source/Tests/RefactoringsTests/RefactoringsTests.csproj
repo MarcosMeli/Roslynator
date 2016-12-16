@@ -8,8 +8,8 @@
     <ProjectGuid>{6A91F900-4DDB-4341-9D8B-B1B65C6A5536}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests</RootNamespace>
-    <AssemblyName>Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests</AssemblyName>
+    <RootNamespace>Roslynator.CSharp.Refactorings.Tests</RootNamespace>
+    <AssemblyName>Roslynator.CSharp.Refactorings.Tests</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -35,7 +35,23 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AddExceptionToDocumentationCommentRefactoring.cs" />
+    <Compile Include="AddToMethodInvocationRefactoring.cs" />
+    <Compile Include="CopyCommentFromBaseRefactoring.cs" />
+    <Compile Include="CheckExpressionForNullRefactoring.cs" />
+    <Compile Include="CallExtensionMethodAsInstanceMethodRefactoring.cs" />
+    <Compile Include="ExpandPropertyAndAddBackingFieldRefactoring.cs" />
+    <Compile Include="IntroduceFieldToLockOnRefactoring.cs" />
+    <Compile Include="GenerateBaseConstructorsRefactoring.cs" />
+    <Compile Include="GenerateOnEventMethodRefactoring.cs" />
+    <Compile Include="IntroduceLocalFromExpressionStatementThatReturnsValueRefactoring.cs" />
+    <Compile Include="MarkContainingClassAsAbstractRefactoring.cs" />
+    <Compile Include="MakeMemberVirtualRefactoring.cs" />
+    <Compile Include="MergeInterpolationIntoInterpolatedStringRefactoring.cs" />
+    <Compile Include="NegateIsExpressionRefactoring.cs" />
+    <Compile Include="RemoveAllPreprocessorDirectivesRefactoring.cs" />
     <Compile Include="RemoveInterpolationRefactoring.cs" />
+    <Compile Include="RemoveRegionRefactoring.cs" />
     <Compile Include="RemoveStatementRefactoring.cs" />
     <Compile Include="DuplicateStatementRefactoring.cs" />
     <Compile Include="ExtractTypeDeclarationToNewFile\ExtractTypeDeclarationToNewFile.cs" />
@@ -48,19 +64,31 @@
     <Compile Include="RemoveAllStatementsRefactoring.cs" />
     <Compile Include="IntroduceAndInitializeRefactoring.cs" />
     <Compile Include="RemoveDirectiveAndRelatedDirectivesRefactoring.cs" />
+    <Compile Include="RemoveUsingAliasDirectiveRefactoring.cs" />
+    <Compile Include="ReplaceAsWithCastRefactoring.cs" />
+    <Compile Include="ReplaceCastWithAsRefactoring.cs" />
     <Compile Include="ReplaceConditionalExpressionWithExpressionRefactoring.cs" />
     <Compile Include="ReplaceExpressionWithConstantValueRefactoring.cs" />
-    <Compile Include="ReplaceIfElseWithConditionalExpressionRefactoring.cs" />
+    <Compile Include="ReplaceEqualsExpressionWithStringEqualsRefactoring.cs" />
+    <Compile Include="ReplaceEqualsExpressionWithStringMethodRefactoring.cs" />
+    <Compile Include="ReplaceIfElseWithAssignment.cs" />
+    <Compile Include="ReplaceForWithWhileRefactoring.cs" />
+    <Compile Include="ReplaceIfElseWithSwitchRefactoring.cs" />
+    <Compile Include="ReplaceIfStatementWithReturnStatementRefactoring.cs" />
+    <Compile Include="ReplaceNullLiteralExpressionWithDefaultExpressionRefactoring.cs" />
+    <Compile Include="ReplaceInterpolatedStringWithInterpolationExpressionRefactoring.cs" />
+    <Compile Include="ReplaceMethodGroupWithLambdaRefactoring.cs" />
     <Compile Include="ReplacePropertyWithMethod\ReplacePropertyWithMethodRefactoring.cs" />
     <Compile Include="ReplacePropertyWithMethod\ReplacePropertyWithMethodRefactoring2.cs" />
     <Compile Include="ReplaceMethodWithProperty\ReplaceMethodWithPropertyRefactoring2.cs" />
+    <Compile Include="SplitSwitchLabelsRefactoring.cs" />
     <Compile Include="WrapInIfDirectiveRefactoring.cs" />
     <Compile Include="WrapInRegionRefactoring.cs" />
     <Compile Include="InlineMethodRefactoring_.cs" />
     <Compile Include="InlineMethodRefactoring.cs" />
     <Compile Include="AddConfigureAwaitRefactoring.cs" />
     <Compile Include="RemoveStatementsFromSwitchSectionsRefactoring.cs" />
-    <Compile Include="CreateConditionFromBooleanExpressionRefactoring.cs" />
+    <Compile Include="ReplaceStatementWithIfStatementRefactoring.cs" />
     <Compile Include="RemoveEmptyLinesRefactoring.cs" />
     <Compile Include="CommentOutStatementRefactoring.cs" />
     <Compile Include="CommentOutMemberRefactoring.cs" />
@@ -71,7 +99,7 @@
     <Compile Include="RemoveConditionFromLastElseRefactoring.cs" />
     <Compile Include="RemoveAllMemberDeclarationsRefactoring.cs" />
     <Compile Include="ReplaceCountWithLengthOrLengthWithCountRefactoring.cs" />
-    <Compile Include="AddNameToLocalDeclarationRefactoring.cs" />
+    <Compile Include="AddIdentifierToVariableDeclarationRefactoring.cs" />
     <Compile Include="SplitLocalDeclarationRefactoring.cs" />
     <Compile Include="ReplaceAnonymousMethodWithLambdaExpressionRefactoring.cs" />
     <Compile Include="ReplaceHasFlagWithBitwiseOperationRefactoring.cs" />
@@ -112,7 +140,7 @@
     <Compile Include="NegateOperatorRefactoring.cs" />
     <Compile Include="NegateBooleanLiteralRefactoring.cs" />
     <Compile Include="NegateBinaryExpressionRefactoring.cs" />
-    <Compile Include="MergeStringLiteralsRefactoring.cs" />
+    <Compile Include="MergeStringExpressionsRefactoring.cs" />
     <Compile Include="MakeMemberAbstractRefactoring.cs" />
     <Compile Include="IntroduceConstructorRefactoring.cs" />
     <Compile Include="CheckParameterForNullRefactoring.cs" />
@@ -179,6 +207,15 @@
     <Compile Include="MergeIfStatementsRefactoring.cs" />
     <Compile Include="WrapInConditionRefactoring.cs" />
     <Compile Include="WrapInTryCatchRefactoring.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.3.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

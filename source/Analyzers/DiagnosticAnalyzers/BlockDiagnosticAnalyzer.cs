@@ -2,14 +2,13 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analyzers;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class BlockDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -19,6 +18,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             get
             {
                 return ImmutableArray.Create(
+                    DiagnosticDescriptors.RemoveRedundantBraces,
+                    DiagnosticDescriptors.RemoveRedundantBracesFadeOut,
                     DiagnosticDescriptors.FormatEmptyBlock,
                     DiagnosticDescriptors.FormatEachStatementOnSeparateLine,
                     DiagnosticDescriptors.RemoveRedundantEmptyLine);
@@ -40,25 +41,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var block = (BlockSyntax)context.Node;
 
-            RedundantEmptyLineAnalyzer.AnalyzeBlock(context, block);
+            RemoveRedundantBracesRefactoring.Analyze(context, block);
 
-            SyntaxList<StatementSyntax> statements = block.Statements;
+            RemoveRedundantEmptyLineRefactoring.Analyze(context, block);
 
-            FormatEachStatementOnSeparateLineAnalyzer.AnalyzeStatements(context, statements);
+            FormatEachStatementOnSeparateLineRefactoring.Analyze(context, block);
 
-            if (!statements.Any())
-            {
-                int startLine = block.OpenBraceToken.GetSpanStartLine();
-                int endLine = block.CloseBraceToken.GetSpanEndLine();
-
-                if ((endLine - startLine) != 1
-                    && block
-                        .DescendantTrivia(block.Span)
-                        .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                {
-                    context.ReportDiagnostic(DiagnosticDescriptors.FormatEmptyBlock, block.GetLocation());
-                }
-            }
+            FormatEmptyBlockRefactoring.Analyze(context, block);
         }
     }
 }

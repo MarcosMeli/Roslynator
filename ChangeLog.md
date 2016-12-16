@@ -1,3 +1,197 @@
+### 1.1.8 (2016-12-07)
+
+#### Refactorings
+
+##### New Refactorings
+
+* ReplaceStatementWithIfStatement
+* NegateIsExpression
+* ReplaceCastWithAs
+* SplitSwitchLabels
+* CheckExpressionForNull
+
+### 1.1.7 (2016-11-29)
+
+#### Refactorings
+
+##### New Refactorings
+
+* CallExtensionMethodAsInstanceMethod
+* ReplaceMethodGroupWithLambda
+* ReplaceIfStatementWithReturnStatement
+* IntroduceLocalFromExpressionStatementThatReturnsValue
+
+### 1.1.6 (2016-11-24)
+
+#### Analyzers
+
+##### New Analyzers
+
+* CombineEnumerableWhereMethodChain
+* UseStringIsNullOrEmptyMethod
+* RemoveRedundantDelegateCreation
+
+#### Refactorings
+
+##### New Refactorings
+
+* AddExceptionToDocumentationComment
+* ReplaceNullLiteralExpressionWithDefaultExpression
+
+### 1.1.5 (2016-11-19)
+
+#### Analyzers
+
+##### New Analyzers
+
+* RemoveEmptyDestructor
+* RemoveRedundantStringToCharArrayCall
+* AddStaticModifierToAllPartialClassDeclarations
+* UseCastMethodInsteadOfSelectMethod
+* DeclareTypeInsideNamespace
+* AddBracesToSwitchSectionWithMultipleStatements
+
+#### Refactorings
+
+##### New Refactorings
+
+* ReplaceEqualsExpressionWithStringIsNullOrEmpty
+* ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace
+
+### 1.1.4 (2016-11-15)
+
+#### Analyzers
+
+##### New Analyzers
+
+* FormatDocumentationSummaryOnSingleLine
+* FormatDocumentationSummaryOnMultipleLines
+* MarkClassAsStatic
+* SimplifyIfElseStatement
+* SimplifyConditionalExpression
+* MergeInterpolationIntoInterpolatedString
+
+#### Refactorings
+
+##### New Refactorings
+
+* MergeInterpolationIntoInterpolatedString
+
+### 1.1.3 (2016-11-12)
+
+#### Analyzers
+
+##### New Analyzers
+
+* RemoveRedundantToStringCall
+* AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression
+* DefaultLabelShouldBeLastLabelInSwitchSection
+
+#### Refactorings
+
+##### New Refactorings
+
+* IntroduceFieldToLockOn
+
+### 1.1.2 (2016-11-10)
+
+#### Analyzers
+
+##### New Analyzers
+
+* UseCSharp6DictionaryInitializer
+* UseBitwiseOperationInsteadOfHasFlagMethod
+
+#### Refactorings
+
+##### New Refactorings
+
+* CopyDocumentationCommentFromBaseMember
+
+### 1.1.1 (2016-11-06)
+
+#### Analyzers
+
+##### New Analyzers
+
+* RemoveFileWithNoCode
+* DeclareUsingDirectiveOnTopLevel
+
+#### Refactorings
+
+##### New Refactorings
+
+* RemoveRegion
+
+### 1.1.0 (2016-11-04)
+
+#### Refactorings
+
+##### New Refactorings
+
+* ReplaceAsWithCast
+* ReplaceEqualsExpressionWithStringEquals
+
+### 1.0.9 (2016-11-02)
+
+#### Refactorings
+
+##### New Refactorings
+
+* RemoveUsingAliasDirective
+* ReplaceInterpolatedStringWithInterpolationExpression
+
+### 1.0.8 (2016-10-31)
+
+#### Analyzers
+
+##### New Analyzers
+
+* AddEmptyLineAfterLastStatementInDoStatement
+
+#### Refactorings
+
+##### New Refactorings
+
+* ReplaceIfElseWithSwitch
+
+### 1.0.7 (2016-10-29)
+
+#### Refactorings
+
+##### New Refactorings
+
+* RemoveAllPreprocessorDirectives
+* AddToMethodInvocation
+
+### 1.0.6 (2016-10-26)
+
+#### Analyzers
+
+##### New Analyzers
+
+* RemoveEmptyRegion
+
+#### Refactorings
+
+##### New Refactorings
+
+* GenerateOnEventMethod
+
+### 1.0.5 (2016-10-24)
+
+#### Refactorings
+
+##### Improvements
+
+* InlineMethod - void method with multiple statements can be inlined.
+* CheckParameterForNull - refactoring can be applied to multiple parameters at once.
+* AddBraces - braces can be added to if statement in last else-if.
+
+##### New Refactorings
+
+* GenerateBaseConstructors
+
 ### 1.0.4 (2016-10-20)
 
 #### Refactorings

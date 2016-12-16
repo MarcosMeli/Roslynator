@@ -8,15 +8,18 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RenameFieldAccordingToCamelCaseWithUnderscoreCodeFixProvider))]
     [Shared]
     public class RenameFieldAccordingToCamelCaseWithUnderscoreCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.RenamePrivateFieldAccordingToCamelCaseWithUnderscore);
+        {
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.RenamePrivateFieldAccordingToCamelCaseWithUnderscore); }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -29,21 +32,20 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             if (declarator == null)
                 return;
 
-            if (context.Document.SupportsSemanticModel)
-            {
-                SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
 
-                ISymbol symbol = semanticModel.GetDeclaredSymbol(declarator, context.CancellationToken);
+            ISymbol symbol = semanticModel.GetDeclaredSymbol(declarator, context.CancellationToken);
 
-                string newName = TextUtility.ToCamelCaseWithUnderscore(declarator.Identifier.ValueText);
+            string newName = TextUtility.ToCamelCaseWithUnderscore(declarator.Identifier.ValueText);
 
-                CodeAction codeAction = CodeAction.Create(
-                    $"Rename field to '{newName}'",
-                    cancellationToken => SymbolRenamer.RenameAsync(context.Document, symbol, newName, cancellationToken),
-                    DiagnosticIdentifiers.RenamePrivateFieldAccordingToCamelCaseWithUnderscore);
+            newName = NameGenerator.GenerateUniqueMemberName(newName, declarator.Identifier.SpanStart, semanticModel, context.CancellationToken);
 
-                context.RegisterCodeFix(codeAction, context.Diagnostics);
-            }
+            CodeAction codeAction = CodeAction.Create(
+                $"Rename field to '{newName}'",
+                cancellationToken => RenamePrivateFieldAccordingToCamelCaseWithUnderscoreRefactoring.RefactorAsync(context.Document, symbol, newName, cancellationToken),
+                DiagnosticIdentifiers.RenamePrivateFieldAccordingToCamelCaseWithUnderscore);
+
+            context.RegisterCodeFix(codeAction, context.Diagnostics);
         }
     }
 }

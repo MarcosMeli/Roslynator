@@ -4,10 +4,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp
+namespace Roslynator.CSharp
 {
     internal static class SyntaxNodeAnalysisContextExtensions
     {
+        public static SyntaxTree SyntaxTree(this SyntaxNodeAnalysisContext context)
+        {
+            return context.Node.SyntaxTree;
+        }
+
         public static void FadeOutToken(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, SyntaxToken token)
         {
             if (!token.IsMissing)
@@ -30,6 +35,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp
         {
             FadeOutToken(context, descriptor, accessorList.OpenBraceToken);
             FadeOutToken(context, descriptor, accessorList.CloseBraceToken);
+        }
+
+        public static void FadeOutParentheses(this SyntaxNodeAnalysisContext context, DiagnosticDescriptor descriptor, ArgumentListSyntax argumentList)
+        {
+            FadeOutToken(context, descriptor, argumentList.OpenParenToken);
+            FadeOutToken(context, descriptor, argumentList.CloseParenToken);
         }
     }
 }

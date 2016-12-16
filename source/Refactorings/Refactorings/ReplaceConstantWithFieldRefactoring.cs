@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceConstantWithFieldRefactoring
     {
@@ -16,17 +17,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             FieldDeclarationSyntax field,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
             FieldDeclarationSyntax newField = field
                 .WithModifiers(GetModifiers(field, semanticModel, cancellationToken))
                 .WithFormatterAnnotation();
 
-            root = root.ReplaceNode(field, newField);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(field, newField, cancellationToken).ConfigureAwait(false);
         }
 
         private static SyntaxTokenList GetModifiers(
@@ -45,15 +42,15 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     constModifier,
                     new SyntaxToken[]
                     {
-                        SyntaxFactory.Token(SyntaxKind.StaticKeyword).WithLeadingTrivia(constModifier.LeadingTrivia),
-                        SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword).WithTrailingTrivia(constModifier.TrailingTrivia)
+                        StaticToken().WithLeadingTrivia(constModifier.LeadingTrivia),
+                        ReadOnlyToken().WithTrailingTrivia(constModifier.TrailingTrivia)
                     });
             }
             else
             {
                 return field.Modifiers.Replace(
                     constModifier,
-                    SyntaxFactory.Token(SyntaxKind.ReadOnlyKeyword).WithTriviaFrom(constModifier));
+                    ReadOnlyToken().WithTriviaFrom(constModifier));
             }
         }
     }

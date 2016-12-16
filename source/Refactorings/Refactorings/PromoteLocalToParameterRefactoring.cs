@@ -7,15 +7,15 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class PromoteLocalToParameterRefactoring
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, LocalDeclarationStatementSyntax localDeclaration)
         {
-            SyntaxNode method = SyntaxUtility.GetContainingMethod(localDeclaration);
+            SyntaxNode method = localDeclaration.GetContainingMethod();
 
             if (method?.IsKind(SyntaxKind.MethodDeclaration) == true)
             {
@@ -35,13 +35,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         {
                             if (type.IsVar)
                             {
-                                SemanticModel semanticModel = await context.GetSemanticModelAsync();
+                                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
                                 ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type, context.CancellationToken).Type;
 
                                 if (typeSymbol?.SupportsExplicitDeclaration() == true)
-                                    {
-                                    type = TypeSyntaxRefactoring.CreateTypeSyntax(typeSymbol);
+                                {
+                                    type = Type(typeSymbol);
                                 }
                                 else
                                 {
@@ -59,7 +59,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                                             context.Document,
                                             (MethodDeclarationSyntax)method,
                                             localDeclaration,
-                                            type.WithoutTrivia(),
+                                            type.WithoutTrivia().WithSimplifierAnnotation(),
                                             variable,
                                             cancellationToken);
                                     });
@@ -78,8 +78,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             VariableDeclaratorSyntax variable,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             int variableCount = localDeclaration.Declaration.Variables.Count;
             ExpressionSyntax initializerValue = variable.Initializer?.Value;
             SyntaxToken identifier = variable.Identifier.WithoutTrivia();
@@ -128,9 +126,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             newMethod = newMethod.AddParameterListParameters(newParameter);
 
-            SyntaxNode newRoot = root.ReplaceNode(method, newMethod);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(method, newMethod, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class QualifiedNameRefactoring
     {
@@ -13,7 +13,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddUsingDirective)
                 && context.Span.IsEmpty
-                && context.SupportsSemanticModel
                 && qualifiedName.DotToken.Span.Start == context.Span.Start
                 && qualifiedName.Left?.IsKind(SyntaxKind.IdentifierName) == true)
             {

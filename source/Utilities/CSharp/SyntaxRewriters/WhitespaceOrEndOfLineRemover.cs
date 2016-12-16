@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
+namespace Roslynator.CSharp.SyntaxRewriters
 {
     public sealed class WhitespaceOrEndOfLineRemover : CSharpSyntaxRewriter
     {
@@ -22,7 +22,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
             if (trivia.IsWhitespaceOrEndOfLineTrivia()
                 && (_span == null || _span.Value.Contains(trivia.Span)))
             {
-                return CSharpFactory.EmptyWhitespaceTrivia;
+                return CSharpFactory.EmptyWhitespaceTrivia();
             }
 
             return base.VisitTrivia(trivia);

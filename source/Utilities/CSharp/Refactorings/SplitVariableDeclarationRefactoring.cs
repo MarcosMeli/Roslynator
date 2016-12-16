@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class SplitVariableDeclarationRefactoring
     {
@@ -75,8 +75,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LocalDeclarationStatementSyntax statement,
             CancellationToken cancellationToken)
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var block = (BlockSyntax)statement.Parent;
 
             SyntaxList<StatementSyntax> newStatements = block.Statements.ReplaceRange(
@@ -85,9 +83,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             BlockSyntax newBlock = block.WithStatements(newStatements);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(block, newBlock);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(block, newBlock, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> SplitFieldDeclarationAsync(
@@ -95,8 +91,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             FieldDeclarationSyntax declaration,
             CancellationToken cancellationToken)
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var containingMember = (MemberDeclarationSyntax)declaration.Parent;
 
             SyntaxList<MemberDeclarationSyntax> members = containingMember.GetMembers();
@@ -107,9 +101,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             MemberDeclarationSyntax newNode = containingMember.SetMembers(newMembers);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(containingMember, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(containingMember, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> SplitEventFieldDeclarationAsync(
@@ -117,8 +109,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             EventFieldDeclarationSyntax declaration,
             CancellationToken cancellationToken)
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var containingMember = (MemberDeclarationSyntax)declaration.Parent;
 
             SyntaxList<MemberDeclarationSyntax> members = containingMember.GetMembers();
@@ -129,9 +119,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             MemberDeclarationSyntax newNode = containingMember.SetMembers(newMembers);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(containingMember, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(containingMember, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static IEnumerable<LocalDeclarationStatementSyntax> SplitLocalDeclaration(LocalDeclarationStatementSyntax statement)

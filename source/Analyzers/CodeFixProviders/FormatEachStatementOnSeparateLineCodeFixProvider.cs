@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FormatEachStatementOnSeparateLineCodeFixProvider))]
     [Shared]
@@ -31,7 +31,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
 
             CodeAction codeAction = CodeAction.Create(
                 "Format statement on a separate line",
-                cancellationToken => FormatStatementOnNextLineRefactoring.RefactorAsync(context.Document, statement, cancellationToken),
+                cancellationToken => FormatEachStatementOnSeparateLineRefactoring.RefactorAsync(context.Document, statement, cancellationToken),
                 DiagnosticIdentifiers.FormatEachStatementOnSeparateLine + EquivalenceKeySuffix);
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);

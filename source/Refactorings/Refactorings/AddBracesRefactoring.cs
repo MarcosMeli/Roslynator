@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddBracesRefactoring
     {
@@ -55,13 +54,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         private static bool CanRefactor(RefactoringContext context, StatementSyntax statement)
         {
-            return context.Span.IsEmptyOrBetweenSpans(statement)
-                && EmbeddedStatementAnalysis.IsEmbeddedStatement(statement);
+            return context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(statement)
+                && EmbeddedStatement.IsEmbeddedStatement(statement);
         }
 
         private static IEnumerable<StatementSyntax> GetEmbeddedStatements(IfStatementSyntax topmostIf)
         {
-            foreach (SyntaxNode node in IfElseChainAnalysis.GetChain(topmostIf))
+            foreach (SyntaxNode node in IfElseChain.GetChain(topmostIf))
             {
                 switch (node.Kind())
                 {
@@ -99,14 +98,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             {
                 if (parent.IsKind(SyntaxKind.ElseClause))
                 {
-                    return IfElseChainAnalysis.GetTopmostIf((ElseClauseSyntax)parent);
+                    return IfElseChain.GetTopmostIf((ElseClauseSyntax)parent);
                 }
                 else
                 {
                     var parentStatement = parent as IfStatementSyntax;
 
                     if (parentStatement != null)
-                        return IfElseChainAnalysis.GetTopmostIf(parentStatement);
+                        return IfElseChain.GetTopmostIf(parentStatement);
                 }
             }
 
@@ -118,14 +117,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             StatementSyntax statement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             BlockSyntax block = SyntaxFactory.Block(statement)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(statement, block);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(statement, block, cancellationToken).ConfigureAwait(false);
         }
     }
 }

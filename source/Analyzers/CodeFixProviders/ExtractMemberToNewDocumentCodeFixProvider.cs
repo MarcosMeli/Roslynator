@@ -7,11 +7,11 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(MemberDeclarationCodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ExtractMemberToNewDocumentCodeFixProvider))]
     [Shared]
     public class ExtractMemberToNewDocumentCodeFixProvider : CodeFixProvider
     {
@@ -29,9 +29,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                 .FirstAncestorOrSelf<MemberDeclarationSyntax>();
 
             string name = ExtractTypeDeclarationToNewDocumentRefactoring.GetIdentifier(memberDeclaration).ValueText;
+            string title = ExtractTypeDeclarationToNewDocumentRefactoring.GetTitle(name);
 
             CodeAction codeAction = CodeAction.Create(
-                ExtractTypeDeclarationToNewDocumentRefactoring.GetTitle(name),
+                title,
                 cancellationToken => ExtractTypeDeclarationToNewDocumentRefactoring.RefactorAsync(context.Document, memberDeclaration, cancellationToken),
                 DiagnosticIdentifiers.DeclareEachTypeInSeparateFile + BaseCodeFixProvider.EquivalenceKeySuffix);
 

@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddOrRenameParameterRefactoring
     {
@@ -38,7 +38,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                     if (span.Contains(context.Span))
                     {
-                        string name = SyntaxUtility.CreateIdentifier(parameterSymbol.Type, firstCharToLower: true);
+                        string name = NameGenerator.GenerateIdentifier(parameterSymbol.Type, firstCharToLower: true);
 
                         if (!string.IsNullOrEmpty(name))
                         {
@@ -53,16 +53,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 && parameter.Identifier.Span.Contains(context.Span))
             {
                 string name = parameter.Identifier.ValueText;
-                string newName = SyntaxUtility.CreateIdentifier(parameterSymbol.Type, firstCharToLower: true);
+                string newName = NameGenerator.GenerateIdentifier(parameterSymbol.Type, firstCharToLower: true);
 
                 if (!string.IsNullOrEmpty(newName)
                     && !string.Equals(name, newName, StringComparison.Ordinal))
                 {
-                    ISymbol symbol = semanticModel.GetDeclaredSymbol(parameter, context.CancellationToken);
+                    newName = await NameGenerator.GenerateUniqueParameterNameAsync(parameterSymbol, newName, context.Solution, context.CancellationToken).ConfigureAwait(false);
 
                     context.RegisterRefactoring(
                         $"Rename parameter to '{newName}'",
-                        cancellationToken => SymbolRenamer.RenameAsync(context.Document, symbol, newName, cancellationToken));
+                        cancellationToken => SymbolRenamer.RenameAsync(context.Document, parameterSymbol, newName, cancellationToken));
                 }
             }
         }
@@ -73,16 +73,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             string name,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             ParameterSyntax newParameter = parameter
                 .WithType(parameter.Type.WithoutTrailingTrivia())
                 .WithIdentifier(SyntaxFactory.Identifier(name).WithTrailingTrivia(parameter.Type.GetTrailingTrivia()))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(parameter, newParameter);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(parameter, newParameter, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CodeRefactorings;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal class RefactoringContext
     {
@@ -42,9 +42,24 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             get { return BaseContext.Document; }
         }
 
+        public Project Project
+        {
+            get { return Document.Project; }
+        }
+
+        public Solution Solution
+        {
+            get { return Project.Solution; }
+        }
+
         public TextSpan Span
         {
             get { return BaseContext.Span; }
+        }
+
+        public bool IsRootCompilationUnit
+        {
+            get { return Root.IsKind(SyntaxKind.CompilationUnit); }
         }
 
         public bool SupportsCSharp6

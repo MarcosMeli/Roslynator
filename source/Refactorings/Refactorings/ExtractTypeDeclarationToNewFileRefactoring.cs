@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ExtractTypeDeclarationToNewFileRefactoring
     {
@@ -58,7 +58,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (identifier.Span.Contains(context.Span)
                 && memberDeclaration.IsParentKind(SyntaxKind.NamespaceDeclaration, SyntaxKind.CompilationUnit)
-                && context.Root.IsKind(SyntaxKind.CompilationUnit)
+                && context.IsRootCompilationUnit
                 && ExtractTypeDeclarationToNewDocumentRefactoring.GetNonNestedTypeDeclarations((CompilationUnitSyntax)context.Root).Skip(1).Any())
             {
                 context.RegisterRefactoring(

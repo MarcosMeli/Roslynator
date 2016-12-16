@@ -5,9 +5,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class SwitchStatementRefactoring
     {
@@ -18,13 +17,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             {
                 context.RegisterRefactoring(
                     "Generate sections",
-                    cancellationToken =>
-                    {
-                        return GenerateSwitchSectionsRefactoring.RefactorAsync(
-                            context.Document,
-                            switchStatement,
-                            cancellationToken);
-                    });
+                    cancellationToken => GenerateSwitchSectionsRefactoring.RefactorAsync(context.Document, switchStatement, cancellationToken));
             }
 
             SelectedSwitchSectionsRefactoring.ComputeRefactorings(context, switchStatement);

@@ -8,7 +8,7 @@
     <ProjectGuid>{1DB4A125-FBF8-4728-ABF5-37B9DF355753}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pihrtsoft.CodeAnalysis.CSharp.Internal</RootNamespace>
+    <RootNamespace>Roslynator.CSharp.Internal</RootNamespace>
     <AssemblyName>Roslynator.Internal.CSharp.Analyzers</AssemblyName>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
@@ -44,8 +44,10 @@
     <Compile Include="CodeFixProviders\ClassDeclarationCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\CompilationUnitCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\InvocationExpressionCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\MemberAccessExpressionCodeFixProvider.cs" />
     <Compile Include="DiagnosticAnalyzers\CompilationUnitDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\ClassDeclarationDiagnosticAnalyzer.cs" />
+    <Compile Include="DiagnosticAnalyzers\SimpleMemberAccessExpressionDiagnosticAnalyzer.cs" />
     <Compile Include="Refactoring\AddCodeFileHeaderRefactoring.cs" />
     <Compile Include="DiagnosticAnalyzers\InvocationExpressionDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticCategories.cs" />
@@ -123,8 +125,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
-    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
+    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
+    <Analyzer Include="..\..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
     <Analyzer Include="..\..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>

@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RemoveStatementsFromSwitchSectionsRefactoring
     {
@@ -19,8 +19,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ImmutableArray<SwitchSectionSyntax> sections,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             IEnumerable<SwitchSectionSyntax> newSections = switchStatement.Sections.Select(section =>
             {
                 if (sections.Contains(section))
@@ -31,9 +29,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             SwitchStatementSyntax newSwitchStatement = switchStatement.WithSections(List(newSections));
 
-            root = root.ReplaceNode(switchStatement, newSwitchStatement);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(switchStatement, newSwitchStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

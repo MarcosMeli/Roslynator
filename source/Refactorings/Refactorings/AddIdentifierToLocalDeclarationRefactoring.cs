@@ -8,50 +8,50 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddIdentifierToLocalDeclarationRefactoring
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, LocalDeclarationStatementSyntax localDeclaration)
         {
-            if (context.SupportsSemanticModel)
+            VariableDeclarationSyntax declaration = localDeclaration.Declaration;
+
+            TypeSyntax type = declaration?.Type;
+
+            if (type?.IsVar == false)
             {
-                TypeSyntax type = localDeclaration.Declaration?.Type;
+                VariableDeclaratorSyntax declarator = declaration.Variables.FirstOrDefault();
 
-                if (type?.IsVar == false)
+                if (declarator != null
+                    && context.Span.Start >= type.Span.Start)
                 {
-                    VariableDeclaratorSyntax declarator = localDeclaration.Declaration.Variables.FirstOrDefault();
+                    SyntaxTriviaList triviaList = type.GetTrailingTrivia();
 
-                    if (declarator != null
-                        && context.Span.Start >= type.Span.Start)
+                    if (triviaList.Any())
                     {
-                        SyntaxTriviaList triviaList = type.GetTrailingTrivia();
+                        SyntaxTrivia trivia = triviaList
+                            .SkipWhile(f => f.IsKind(SyntaxKind.WhitespaceTrivia))
+                            .FirstOrDefault();
 
-                        if (triviaList.Any())
+                        if (trivia.IsKind(SyntaxKind.EndOfLineTrivia)
+                            && context.Span.End <= trivia.Span.Start)
                         {
-                            SyntaxTrivia trivia = triviaList
-                                .SkipWhile(f => f.IsKind(SyntaxKind.WhitespaceTrivia))
-                                .FirstOrDefault();
+                            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                            if (trivia.IsKind(SyntaxKind.EndOfLineTrivia)
-                                && context.Span.End <= trivia.Span.Start)
+                            ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+                            if (typeSymbol?.IsErrorType() == false)
                             {
-                                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                                string name = NameGenerator.GenerateIdentifier(typeSymbol, firstCharToLower: true);
+                                name = NameGenerator.GenerateUniqueLocalName(name, declarator.SpanStart, semanticModel, context.CancellationToken);
 
-                                ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type, context.CancellationToken).Type;
-
-                                if (typeSymbol?.IsErrorType() == false)
+                                if (!string.IsNullOrEmpty(name))
                                 {
-                                    string name = SyntaxUtility.CreateIdentifier(typeSymbol, firstCharToLower: true);
-
-                                    if (!string.IsNullOrEmpty(name))
-                                    {
-                                        context.RegisterRefactoring(
-                                            $"Add identifier '{name}'",
-                                            c => RefactorAsync(context.Document, declarator, type, name, c));
-                                    }
+                                    context.RegisterRefactoring(
+                                        $"Add identifier '{name}'",
+                                        c => RefactorAsync(context.Document, declarator, type, name, c));
                                 }
                             }
                         }
@@ -62,27 +62,24 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ExpressionStatementSyntax expressionStatement)
         {
-            if (context.SupportsSemanticModel)
+            var expression = expressionStatement.Expression as TypeSyntax;
+
+            if (expression != null)
             {
-                var expression = expressionStatement.Expression as TypeSyntax;
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                if (expression != null)
+                ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(expression, context.CancellationToken);
+
+                if (typeSymbol?.IsErrorType() == false)
                 {
-                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                    string name = NameGenerator.GenerateIdentifier(typeSymbol, firstCharToLower: true);
+                    name = NameGenerator.GenerateUniqueLocalName(name, expression.SpanStart, semanticModel, context.CancellationToken);
 
-                    ITypeSymbol typeSymbol = semanticModel
-                        .GetTypeInfo(expression, context.CancellationToken).Type;
-
-                    if (typeSymbol?.IsErrorType() == false)
+                    if (!string.IsNullOrEmpty(name))
                     {
-                        string name = SyntaxUtility.CreateIdentifier(typeSymbol, firstCharToLower: true);
-
-                        if (!string.IsNullOrEmpty(name))
-                        {
-                            context.RegisterRefactoring(
-                                $"Add identifier '{name}'",
-                                c => RefactorAsync(context.Document, expressionStatement, name, c));
-                        }
+                        context.RegisterRefactoring(
+                            $"Add identifier '{name}'",
+                            c => RefactorAsync(context.Document, expressionStatement, name, c));
                     }
                 }
             }
@@ -95,8 +92,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             string name,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SourceText sourceText = await document.GetTextAsync(cancellationToken).ConfigureAwait(false);
-
             SyntaxTrivia endOfLine = type.GetTrailingTrivia()
                 .SkipWhile(f => f.IsKind(SyntaxKind.WhitespaceTrivia))
                 .First();
@@ -105,9 +100,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             var textChange = new TextChange(span, " " + name);
 
-            SourceText newSourceText = sourceText.WithChanges(textChange);
-
-            return document.WithText(newSourceText);
+            return await document.WithTextChangeAsync(textChange, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> RefactorAsync(
@@ -116,8 +109,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             string name,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             LocalDeclarationStatementSyntax newNode = LocalDeclarationStatement(
                 VariableDeclaration(
                     (TypeSyntax)expressionStatement.Expression,
@@ -134,9 +125,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 newNode = newNode.WithTriviaFrom(expressionStatement);
             }
 
-            root = root.ReplaceNode(expressionStatement, newNode);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(expressionStatement, newNode, cancellationToken).ConfigureAwait(false);
         }
     }
 }

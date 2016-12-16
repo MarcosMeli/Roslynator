@@ -7,9 +7,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ExtractStatementRefactoring
     {
@@ -19,19 +18,30 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 && context.Span.IsEmpty)
             {
                 if (!statement.IsKind(SyntaxKind.Block)
-                    || ((BlockSyntax)statement).Statements.Count > 0)
+                    || ((BlockSyntax)statement).Statements.Any())
                 {
-                    if (statement.Parent?.IsKind(SyntaxKind.Block) == true)
-                        statement = (BlockSyntax)statement.Parent;
+                    SyntaxNode parent = statement.Parent;
 
-                    if (statement.Parent != null
-                        && (CheckContainingNode(statement.Parent)
-                        && GetContainingBlock(statement.Parent)?.IsKind(SyntaxKind.Block) == true))
+                    if (parent?.IsKind(SyntaxKind.Block) == true)
                     {
-                        string s = (UsePlural(statement)) ? "s" : "";
+                        statement = (BlockSyntax)parent;
+                        parent = statement.Parent;
+                    }
+
+                    if (parent != null
+                        && (CheckContainingNode(parent)
+                        && GetContainingBlock(parent)?.IsKind(SyntaxKind.Block) == true))
+                    {
+                        string title = "Extract statement";
+
+                        if (statement.IsKind(SyntaxKind.Block)
+                            && ((BlockSyntax)statement).Statements.Count > 1)
+                        {
+                            title += "s";
+                        }
 
                         context.RegisterRefactoring(
-                            $"Extract statement{s}",
+                            title,
                             cancellationToken => RefactorAsync(context.Document, statement, cancellationToken));
                     }
                 }
@@ -42,7 +52,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (node.IsKind(SyntaxKind.ElseClause))
             {
-                return IfElseChainAnalysis.GetTopmostIf((ElseClauseSyntax)node)?.Parent;
+                return IfElseChain.GetTopmostIf((ElseClauseSyntax)node)?.Parent;
             }
             else
             {
@@ -67,22 +77,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 case SyntaxKind.UncheckedStatement:
                     return true;
                 case SyntaxKind.IfStatement:
-                    return IfElseChainAnalysis.IsTopmostIf((IfStatementSyntax)node);
+                    return IfElseChain.IsTopmostIf((IfStatementSyntax)node);
                 case SyntaxKind.ElseClause:
-                    return IfElseChainAnalysis.IsEndOfChain((ElseClauseSyntax)node);
-            }
-
-            return false;
-        }
-
-        private static bool UsePlural(StatementSyntax statement)
-        {
-            if (statement.IsKind(SyntaxKind.Block))
-            {
-                var block = (BlockSyntax)statement;
-
-                if (block.Statements.Count > 1)
-                    return true;
+                    return IfElseChain.IsEndOfChain((ElseClauseSyntax)node);
             }
 
             return false;
@@ -93,21 +90,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             StatementSyntax statement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             IEnumerable<StatementSyntax> newNodes = GetNewNodes(statement)
                 .Select(f => f.WithFormatterAnnotation());
 
-            SyntaxNode newRoot = GetNewRoot(statement, oldRoot, newNodes);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static SyntaxNode GetNewRoot(StatementSyntax statement, SyntaxNode oldRoot, IEnumerable<StatementSyntax> newNodes)
-        {
             if (statement.Parent.IsKind(SyntaxKind.ElseClause))
             {
-                IfStatementSyntax ifStatement = IfElseChainAnalysis.GetTopmostIf((ElseClauseSyntax)statement.Parent);
+                IfStatementSyntax ifStatement = IfElseChain.GetTopmostIf((ElseClauseSyntax)statement.Parent);
                 var block = (BlockSyntax)ifStatement.Parent;
                 int index = block.Statements.IndexOf(ifStatement);
 
@@ -115,11 +103,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                 newBlock = newBlock.WithStatements(newBlock.Statements.InsertRange(index + 1, newNodes));
 
-                return oldRoot.ReplaceNode(block, newBlock);
+                return await document.ReplaceNodeAsync(block, newBlock, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                return oldRoot.ReplaceNode(statement.Parent, newNodes);
+                return await document.ReplaceNodeAsync(statement.Parent, newNodes, cancellationToken).ConfigureAwait(false);
             }
         }
 
@@ -130,7 +118,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (statement.Parent.IsKind(SyntaxKind.ElseClause))
             {
                 list = new List<SyntaxTrivia>();
-                list.Add(CSharpFactory.NewLine);
+                list.Add(CSharpFactory.NewLineTrivia());
             }
             else
             {

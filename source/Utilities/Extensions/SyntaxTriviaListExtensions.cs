@@ -5,10 +5,21 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class SyntaxTriviaListExtensions
     {
+        public static int LastIndexOf(this SyntaxTriviaList triviaList, SyntaxKind kind)
+        {
+            for (int i = triviaList.Count - 1; i >= 0; i--)
+            {
+                if (triviaList[i].IsKind(kind))
+                    return i;
+            }
+
+            return -1;
+        }
+
         public static bool IsEmpty(this SyntaxTriviaList list)
         {
             return list.Count == 0;

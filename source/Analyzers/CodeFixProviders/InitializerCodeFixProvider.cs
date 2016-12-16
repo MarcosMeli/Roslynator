@@ -2,23 +2,29 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Linq;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(InitializerCodeFixProvider))]
     [Shared]
     public class InitializerCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.RemoveRedundantCommaInInitializer);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticIdentifiers.RemoveRedundantCommaInInitializer,
+                    DiagnosticIdentifiers.UseCSharp6DictionaryInitializer);
+            }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -28,47 +34,37 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
                 .FirstAncestorOrSelf<InitializerExpressionSyntax>();
 
+            Debug.Assert(initializer != null, $"{nameof(initializer)} is null");
+
             if (initializer == null)
                 return;
 
-            CodeAction codeAction = CodeAction.Create(
-                "Remove redundant comma",
-                cancellationToken => RemoveRedundantCommaAsync(context.Document, initializer, cancellationToken),
-                DiagnosticIdentifiers.RemoveRedundantCommaInInitializer + EquivalenceKeySuffix);
+            foreach (Diagnostic diagnostic in context.Diagnostics)
+            {
+                switch (diagnostic.Id)
+                {
+                    case DiagnosticIdentifiers.RemoveRedundantCommaInInitializer:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Remove redundant comma",
+                                cancellationToken => RemoveRedundantCommaInInitializerRefactoring.RefactorAsync(context.Document, initializer, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-            context.RegisterCodeFix(codeAction, context.Diagnostics);
-        }
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.UseCSharp6DictionaryInitializer:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Use C# 6.0 dictionary initializer",
+                                cancellationToken => UseCSharp6DictionaryInitializerRefactoring.RefactorAsync(context.Document, initializer, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-        private static async Task<Document> RemoveRedundantCommaAsync(
-            Document document,
-            InitializerExpressionSyntax initializer,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            SyntaxToken lastComma = initializer.Expressions.GetSeparators().Last();
-
-            SyntaxTriviaList newTrailingTrivia = initializer.Expressions.Last().GetTrailingTrivia()
-                .AddRange(lastComma.LeadingTrivia)
-                .AddRange(lastComma.TrailingTrivia);
-
-            SeparatedSyntaxList<ExpressionSyntax> newExpressions = initializer
-                .Expressions
-                .ReplaceSeparator(
-                    lastComma,
-                    SyntaxFactory.MissingToken(SyntaxKind.CommaToken));
-
-            ExpressionSyntax lastExpression = newExpressions.Last();
-
-            newExpressions = newExpressions
-                .Replace(lastExpression, lastExpression.WithTrailingTrivia(newTrailingTrivia));
-
-            InitializerExpressionSyntax newInitializer = initializer
-                .WithExpressions(newExpressions);
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(initializer, newInitializer);
-
-            return document.WithSyntaxRoot(newRoot);
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                }
+            }
         }
     }
 }

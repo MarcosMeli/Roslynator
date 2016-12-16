@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings.ReplaceMethodWithProperty;
+using Roslynator.CSharp.Refactorings.ReplaceMethodWithProperty;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class MethodDeclarationRefactoring
     {
@@ -16,17 +16,27 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             if (methodDeclaration.Span.Contains(context.Span))
             {
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic)
+                if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic, RefactoringIdentifiers.MarkAllMembersAsStatic)
                     && MarkMemberAsStaticRefactoring.CanRefactor(methodDeclaration))
                 {
-                    context.RegisterRefactoring(
-                        "Mark method as static",
-                        cancellationToken => MarkMemberAsStaticRefactoring.RefactorAsync(context.Document, methodDeclaration, cancellationToken));
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic))
+                    {
+                        context.RegisterRefactoring(
+                       "Mark method as static",
+                       cancellationToken => MarkMemberAsStaticRefactoring.RefactorAsync(context.Document, methodDeclaration, cancellationToken));
+                    }
 
-                    MarkAllMembersAsStaticRefactoring.RegisterRefactoring(context, (ClassDeclarationSyntax)methodDeclaration.Parent);
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkAllMembersAsStatic))
+                        MarkAllMembersAsStaticRefactoring.RegisterRefactoring(context, (ClassDeclarationSyntax)methodDeclaration.Parent);
                 }
 
                 await ChangeMethodReturnTypeToVoidRefactoring.ComputeRefactoringAsync(context, methodDeclaration).ConfigureAwait(false);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkContainingClassAsAbstract)
+                && methodDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                MarkContainingClassAsAbstractRefactoring.ComputeRefactoring(context, methodDeclaration);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceMethodWithProperty)
@@ -57,40 +67,66 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     cancellationToken => MakeMemberAbstractRefactoring.RefactorAsync(context.Document, methodDeclaration, cancellationToken));
             }
 
-            await RenameMethodAccoringToTypeNameAsync(context, methodDeclaration).ConfigureAwait(false);
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MakeMemberVirtual)
+                && methodDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                MakeMemberVirtualRefactoring.ComputeRefactoring(context, methodDeclaration);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && methodDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, methodDeclaration).ConfigureAwait(false);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameMethodAccordingToTypeName))
+                await RenameMethodAccoringToTypeNameAsync(context, methodDeclaration).ConfigureAwait(false);
         }
 
         private static async Task RenameMethodAccoringToTypeNameAsync(
             RefactoringContext context,
             MethodDeclarationSyntax methodDeclaration)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenameMethodAccordingToTypeName)
-                && context.SupportsSemanticModel
-                && methodDeclaration.ReturnType?.IsVoid() == false
-                && methodDeclaration.Identifier.Span.Contains(context.Span))
+            TypeSyntax returnType = methodDeclaration.ReturnType;
+
+            if (returnType?.IsVoid() == false)
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                SyntaxToken identifier = methodDeclaration.Identifier;
 
-                IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
-
-                ITypeSymbol typeSymbol = GetType(methodDeclaration.ReturnType, semanticModel, context.CancellationToken);
-
-                if (typeSymbol != null)
+                if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(identifier))
                 {
-                    string newName = SyntaxUtility.CreateIdentifier(typeSymbol);
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                    if (!string.IsNullOrEmpty(newName))
+                    IMethodSymbol methodSymbol = semanticModel.GetDeclaredSymbol(methodDeclaration, context.CancellationToken);
+
+                    ITypeSymbol typeSymbol = GetType(returnType, semanticModel, context.CancellationToken);
+
+                    if (typeSymbol != null)
                     {
-                        newName = "Get" + newName;
+                        string newName = NameGenerator.GenerateIdentifier(typeSymbol);
 
-                        if (methodSymbol.IsAsync)
-                            newName += "Async";
-
-                        if (!string.Equals(newName, methodDeclaration.Identifier.ValueText, StringComparison.Ordinal))
+                        if (!string.IsNullOrEmpty(newName))
                         {
-                            context.RegisterRefactoring(
-                                $"Rename method to '{newName}'",
-                                cancellationToken => SymbolRenamer.RenameAsync(context.Document, methodSymbol, newName, cancellationToken));
+                            newName = "Get" + newName;
+
+                            if (methodSymbol.IsAsync)
+                                newName += "Async";
+
+                            if (!string.Equals(identifier.ValueText, newName, StringComparison.Ordinal))
+                            {
+                                bool isUnique = await NameGenerator.IsUniqueMemberNameAsync(
+                                    methodSymbol,
+                                    newName,
+                                    context.Solution,
+                                    context.CancellationToken).ConfigureAwait(false);
+
+                                if (isUnique)
+                                {
+                                    context.RegisterRefactoring(
+                                       $"Rename method to '{newName}'",
+                                       cancellationToken => SymbolRenamer.RenameAsync(context.Document, methodSymbol, newName, cancellationToken));
+                                }
+                            }
                         }
                     }
                 }
@@ -106,14 +142,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             if (returnTypeSymbol != null)
             {
-                INamedTypeSymbol taskSymbol = semanticModel.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task");
+                INamedTypeSymbol taskSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task);
 
                 if (taskSymbol != null)
                 {
                     if (returnTypeSymbol.Equals(taskSymbol))
                         return null;
 
-                    INamedTypeSymbol taskOfTSymbol = semanticModel.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
+                    INamedTypeSymbol taskOfTSymbol = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_Threading_Tasks_Task_T);
 
                     if (taskOfTSymbol != null
                         && returnTypeSymbol.ConstructedFrom.Equals(taskOfTSymbol))

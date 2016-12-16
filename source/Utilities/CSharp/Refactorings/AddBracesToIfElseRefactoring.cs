@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class AddBracesToIfElseRefactoring
     {
@@ -23,35 +22,24 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (ifStatement == null)
                 throw new ArgumentNullException(nameof(ifStatement));
 
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            var rewriter = new SyntaxRewriter();
 
-            IfStatementSyntax newNode = SyntaxRewriter.VisitNode(ifStatement)
+            var newNode = (IfStatementSyntax)rewriter.Visit(ifStatement)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(ifStatement, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(ifStatement, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private class SyntaxRewriter : CSharpSyntaxRewriter
         {
             private IfStatementSyntax _previousIf;
 
-            private SyntaxRewriter()
-            {
-            }
-
-            public static IfStatementSyntax VisitNode(IfStatementSyntax node)
-            {
-                return (IfStatementSyntax)new SyntaxRewriter().Visit(node);
-            }
-
             public override SyntaxNode VisitIfStatement(IfStatementSyntax node)
             {
                 if (node == null)
                     throw new ArgumentNullException(nameof(node));
 
-                if (_previousIf == null || _previousIf.Equals(IfElseChainAnalysis.GetPreviousIf(node)))
+                if (_previousIf == null || _previousIf.Equals(IfElseChain.GetPreviousIf(node)))
                 {
                     if (node.Statement != null
                         && !node.Statement.IsKind(SyntaxKind.Block))

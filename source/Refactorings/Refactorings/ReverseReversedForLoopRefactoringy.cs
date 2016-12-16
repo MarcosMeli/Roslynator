@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReverseReversedForLoopRefactoring
     {
@@ -38,8 +38,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ForStatementSyntax forStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             VariableDeclarationSyntax declaration = forStatement.Declaration;
 
             var incrementor = (PostfixUnaryExpressionSyntax)forStatement.Incrementors[0];
@@ -63,9 +61,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithCondition(newCondition)
                 .WithIncrementors(newIncrementors);
 
-            root = root.ReplaceNode(forStatement, newForStatement);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(forStatement, newForStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

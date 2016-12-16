@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class NotifyPropertyChangedRefactoring
     {
@@ -55,7 +55,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (propertySymbol != null
                 && propertySymbol.ContainingType != null)
             {
-                INamedTypeSymbol inotifyPropertyChanged = semanticModel.Compilation.GetTypeByMetadataName("System.ComponentModel.INotifyPropertyChanged");
+                INamedTypeSymbol inotifyPropertyChanged = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_ComponentModel_INotifyPropertyChanged);
 
                 if (inotifyPropertyChanged != null)
                     return propertySymbol.ContainingType.AllInterfaces.Contains(inotifyPropertyChanged);
@@ -70,8 +70,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             bool supportsCSharp6,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             AccessorDeclarationSyntax setter = property.Setter();
 
             AccessorDeclarationSyntax newSetter = CreateSetter(
@@ -83,9 +81,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithTriviaFrom(property)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(setter, newSetter);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(setter, newSetter, cancellationToken).ConfigureAwait(false);
         }
 
         private static AccessorDeclarationSyntax CreateSetter(IdentifierNameSyntax fieldIdentifierName, string propertyName, bool supportsCSharp6)
@@ -114,7 +110,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             ExpressionStatement(
                                 InvocationExpression(
                                     "OnPropertyChanged",
-                                    Argument(argumentExpression)))))));
+                                    ArgumentList(Argument(argumentExpression))))))));
         }
 
         public static IdentifierNameSyntax GetBackingFieldIdentifierName(AccessorDeclarationSyntax accessor)

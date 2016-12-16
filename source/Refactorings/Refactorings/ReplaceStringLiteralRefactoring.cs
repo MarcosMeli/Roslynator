@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceStringLiteralRefactoring
     {
@@ -24,32 +24,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             int interpolationLength = 0,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             string s = literalExpression.Token.Text.ToString();
 
             if (interpolationStartIndex != -1)
             {
-                s = EscapeBraces(s.Substring(0, interpolationStartIndex)) +
+                s = TextUtility.DoubleBraces(s.Substring(0, interpolationStartIndex)) +
                    "{" +
                    s.Substring(interpolationStartIndex, interpolationLength) +
                    "}" +
-                   EscapeBraces(s.Substring(interpolationStartIndex + interpolationLength));
+                   TextUtility.DoubleBraces(s.Substring(interpolationStartIndex + interpolationLength));
             }
 
             var interpolatedString = (InterpolatedStringExpressionSyntax)ParseExpression("$" + s)
                 .WithTriviaFrom(literalExpression);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(literalExpression, interpolatedString);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static string EscapeBraces(string s)
-        {
-            return s
-                .Replace("{", "{{")
-                .Replace("}", "}}");
+            return await document.ReplaceNodeAsync(literalExpression, interpolatedString, cancellationToken).ConfigureAwait(false);
         }
 
         public static bool CanReplaceWithStringEmpty(LiteralExpressionSyntax literalExpression)
@@ -63,8 +52,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LiteralExpressionSyntax literalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             MemberAccessExpressionSyntax newNode = MemberAccessExpression(
                     SyntaxKind.SimpleMemberAccessExpression,
                     PredefinedType(Token(SyntaxKind.StringKeyword)),
@@ -72,9 +59,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithTriviaFrom(literalExpression)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(literalExpression, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(literalExpression, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task<Document> ReplaceWithRegularStringLiteralAsync(
@@ -82,16 +67,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LiteralExpressionSyntax literalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             string s = CreateRegularStringLiteral(literalExpression.Token.ValueText);
 
             LiteralExpressionSyntax newNode = ParseRegularStringLiteral(s)
                 .WithTriviaFrom(literalExpression);
 
-            root = root.ReplaceNode(literalExpression, newNode);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(literalExpression, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task<Document> ReplaceWithRegularStringLiteralsAsync(
@@ -99,15 +80,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LiteralExpressionSyntax literalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             BinaryExpressionSyntax newNode = CreateAddExpression(literalExpression.Token.ValueText)
                 .WithTriviaFrom(literalExpression)
                 .WithFormatterAnnotation();
 
-            root = root.ReplaceNode(literalExpression, newNode);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(literalExpression, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task<Document> ReplaceWithVerbatimStringLiteralAsync(
@@ -115,8 +92,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LiteralExpressionSyntax literalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             string s = literalExpression.Token.ValueText;
 
             s = s.Replace(Quote, Quote + Quote);
@@ -124,9 +99,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             var newNode = (LiteralExpressionSyntax)ParseExpression(AmpersandQuote + s + Quote)
                 .WithTriviaFrom(literalExpression);
 
-            root = root.ReplaceNode(literalExpression, newNode);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(literalExpression, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static string CreateRegularStringLiteral(string text)
@@ -239,60 +212,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         private static LiteralExpressionSyntax ParseRegularStringLiteral(string text)
         {
             return (LiteralExpressionSyntax)ParseExpression(Quote + text + Quote);
-        }
-
-        public static bool CanReplaceWithCharacterLiteral(LiteralExpressionSyntax literalExpression)
-        {
-            return literalExpression.IsKind(SyntaxKind.StringLiteralExpression)
-                && literalExpression.Token.ValueText.Length == 1;
-        }
-
-        public static async Task<Document> ReplaceWithCharacterLiteralAsync(
-            Document document,
-            LiteralExpressionSyntax literalExpression,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            var charLiteralExpression = (LiteralExpressionSyntax)ParseExpression($"'{GetCharLiteralText(literalExpression)}'")
-                .WithTriviaFrom(literalExpression);
-
-            root = root.ReplaceNode(literalExpression, charLiteralExpression);
-
-            return document.WithSyntaxRoot(root);
-        }
-
-        private static string GetCharLiteralText(LiteralExpressionSyntax literalExpression)
-        {
-            string s = literalExpression.Token.ValueText;
-
-            switch (s[0])
-            {
-                case '\'':
-                    return @"\'";
-                case '\"':
-                    return @"\""";
-                case '\\':
-                    return @"\\";
-                case '\0':
-                    return @"\0";
-                case '\a':
-                    return @"\a";
-                case '\b':
-                    return @"\b";
-                case '\f':
-                    return @"\f";
-                case '\n':
-                    return @"\n";
-                case '\r':
-                    return @"\r";
-                case '\t':
-                    return @"\t";
-                case '\v':
-                    return @"\v";
-                default:
-                    return s;
-            }
         }
     }
 }

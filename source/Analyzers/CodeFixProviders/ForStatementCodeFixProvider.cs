@@ -2,25 +2,24 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Linq;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Text;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ForStatementCodeFixProvider))]
     [Shared]
     public class ForStatementCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.AvoidUsageOfForStatementToCreateInfiniteLoop);
+        {
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.AvoidUsageOfForStatementToCreateInfiniteLoop); }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -30,60 +29,33 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
                 .FirstAncestorOrSelf<ForStatementSyntax>();
 
+            Debug.Assert(forStatement != null, $"{nameof(forStatement)} is null");
+
             if (forStatement == null)
                 return;
 
-            TextSpan span = TextSpan.FromBounds(
-                forStatement.OpenParenToken.Span.End,
-                forStatement.CloseParenToken.Span.Start);
-
-            if (forStatement
-                .DescendantTrivia(span)
-                .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            foreach (Diagnostic diagnostic in context.Diagnostics)
             {
-                CodeAction codeAction = CodeAction.Create(
-                    "Use while statement to create an infinite loop",
-                    cancellationToken =>
-                    {
-                        return ConvertForStatementToWhileStatementAsync(
-                            context.Document,
-                            forStatement,
-                            cancellationToken);
-                    },
-                    DiagnosticIdentifiers.AvoidUsageOfForStatementToCreateInfiniteLoop);
+                switch (diagnostic.Id)
+                {
+                    case DiagnosticIdentifiers.AvoidUsageOfForStatementToCreateInfiniteLoop:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Use while to create an infinite loop",
+                                cancellationToken =>
+                                {
+                                    return AvoidUsageOfForStatementToCreateInfiniteLoopRefactoring.RefactorAsync(
+                                        context.Document,
+                                        forStatement,
+                                        cancellationToken);
+                                },
+                                diagnostic.Id + EquivalenceKeySuffix);
 
-                context.RegisterCodeFix(codeAction, context.Diagnostics);
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                }
             }
-        }
-
-        private static async Task<Document> ConvertForStatementToWhileStatementAsync(
-            Document document,
-            ForStatementSyntax forStatement,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            WhileStatementSyntax newNode = WhileStatement(
-                Token(SyntaxKind.WhileKeyword)
-                    .WithTriviaFrom(forStatement.ForKeyword),
-                Token(
-                    forStatement.OpenParenToken.LeadingTrivia,
-                    SyntaxKind.OpenParenToken,
-                    default(SyntaxTriviaList)),
-                LiteralExpression(SyntaxKind.TrueLiteralExpression),
-                Token(
-                    default(SyntaxTriviaList),
-                    SyntaxKind.CloseParenToken,
-                    forStatement.CloseParenToken.TrailingTrivia),
-                forStatement.Statement);
-
-            newNode = newNode
-                .WithTriviaFrom(forStatement)
-                .WithFormatterAnnotation();
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(forStatement, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
         }
     }
 }

@@ -6,15 +6,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class ForEachStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.UseExplicitTypeInsteadOfVarInForEach);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.UseExplicitTypeInsteadOfVarInForEach); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -31,14 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var forEachStatement = (ForEachStatementSyntax)context.Node;
 
-            TypeAnalysisResult result = ForEachStatementAnalysis.AnalyzeType(forEachStatement, context.SemanticModel, context.CancellationToken);
-
-            if (result == TypeAnalysisResult.ImplicitButShouldBeExplicit)
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.UseExplicitTypeInsteadOfVarInForEach,
-                    forEachStatement.Type.GetLocation());
-            }
+            UseExplicitTypeInsteadOfVarRefactoring.Analyze(context, forEachStatement);
         }
     }
 }

@@ -3,21 +3,22 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AttributeArgumentListRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, AttributeArgumentListSyntax argumentList)
         {
-            if (argumentList.Arguments.Count == 0)
+            if (!argumentList.Arguments.Any())
                 return;
 
             await AttributeArgumentParameterNameRefactoring.ComputeRefactoringsAsync(context, argumentList).ConfigureAwait(false);
 
-            DuplicateAttributeArgumentRefactoring.ComputeRefactoring(context, argumentList);
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.DuplicateArgument))
+                DuplicateAttributeArgumentRefactoring.ComputeRefactoring(context, argumentList);
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.FormatArgumentList)
-                && (context.Span.IsEmpty || context.Span.IsBetweenSpans(argumentList)))
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(argumentList))
             {
                 if (argumentList.IsSingleLine())
                 {

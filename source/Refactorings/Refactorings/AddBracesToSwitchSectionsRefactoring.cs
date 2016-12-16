@@ -7,10 +7,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddBracesToSwitchSectionsRefactoring
     {
@@ -22,14 +21,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             SwitchSectionSyntax[] sections,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             IEnumerable<SwitchSectionSyntax> newSections = switchStatement
                 .Sections
                 .Select(section =>
                 {
                     if ((sections == null || Array.IndexOf(sections, section) != -1)
-                        && SwitchStatementAnalysis.CanAddBraces(section))
+                        && AddBracesToSwitchSectionRefactoring.CanAddBraces(section))
                     {
                         return section.WithStatements(SingletonList<StatementSyntax>(Block(section.Statements)));
                     }
@@ -43,9 +40,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithSections(List(newSections))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = root.ReplaceNode(switchStatement, newSwitchStatement);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(switchStatement, newSwitchStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

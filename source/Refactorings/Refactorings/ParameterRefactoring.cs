@@ -2,30 +2,28 @@
 
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings.IntroduceAndInitialize;
+using Roslynator.CSharp.Refactorings.IntroduceAndInitialize;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ParameterRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, ParameterSyntax parameter)
         {
-            if (context.SupportsSemanticModel)
+            await AddOrRenameParameterRefactoring.ComputeRefactoringsAsync(context, parameter).ConfigureAwait(false);
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CheckParameterForNull))
+                await CheckParameterForNullRefactoring.ComputeRefactoringAsync(context, parameter).ConfigureAwait(false);
+
+            if (context.IsAnyRefactoringEnabled(
+                RefactoringIdentifiers.IntroduceAndInitializeField,
+                RefactoringIdentifiers.IntroduceAndInitializeProperty))
             {
-                await AddOrRenameParameterRefactoring.ComputeRefactoringsAsync(context, parameter).ConfigureAwait(false);
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.CheckParameterForNull))
-                    await CheckParameterForNullRefactoring.ComputeRefactoringAsync(context, parameter).ConfigureAwait(false);
-
-                if (context.IsAnyRefactoringEnabled(
-                    RefactoringIdentifiers.IntroduceAndInitializeField,
-                    RefactoringIdentifiers.IntroduceAndInitializeProperty))
-                {
-                    IntroduceAndInitializeRefactoring.ComputeRefactoring(context, parameter);
-                }
-
-                await AddDefaultValueToParameterRefactoring.ComputeRefactoringAsync(context, parameter).ConfigureAwait(false);
+                IntroduceAndInitializeRefactoring.ComputeRefactoring(context, parameter);
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddDefaultValueToParameter))
+                await AddDefaultValueToParameterRefactoring.ComputeRefactoringAsync(context, parameter).ConfigureAwait(false);
         }
     }
 }

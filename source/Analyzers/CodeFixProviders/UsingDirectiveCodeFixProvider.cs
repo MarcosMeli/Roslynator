@@ -7,9 +7,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(UsingDirectiveCodeFixProvider))]
     [Shared]
@@ -31,11 +31,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             if (usingDirective == null)
                 return;
 
-            string name = usingDirective.Alias.Name.Identifier.ValueText;
-
             CodeAction codeAction = CodeAction.Create(
-                $"Remove alias '{name}'",
-                cancellationToken => UsingAliasDirectiveSyntaxRewriter.RewriteAsync(context.Document, usingDirective, cancellationToken),
+                "Inline alias expression",
+                cancellationToken => AvoidUsageOfUsingAliasDirectiveRefactoring.RefactorAsync(context.Document, usingDirective, cancellationToken),
                 DiagnosticIdentifiers.AvoidUsageOfUsingAliasDirective + EquivalenceKeySuffix);
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);

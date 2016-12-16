@@ -6,14 +6,17 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class UsingDirectiveDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.AvoidUsageOfUsingAliasDirective);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.AvoidUsageOfUsingAliasDirective); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -30,12 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var usingDirective = (UsingDirectiveSyntax)context.Node;
 
-            if (usingDirective.Alias != null)
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.AvoidUsageOfUsingAliasDirective,
-                    usingDirective.GetLocation());
-            }
+            AvoidUsageOfUsingAliasDirectiveRefactoring.Analyze(context, usingDirective);
         }
     }
 }

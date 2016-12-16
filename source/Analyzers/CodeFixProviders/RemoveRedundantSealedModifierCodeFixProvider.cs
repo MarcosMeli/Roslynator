@@ -6,32 +6,34 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(RemoveRedundantSealedModifierCodeFixProvider))]
     [Shared]
     public class RemoveRedundantSealedModifierCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.RemoveRedundantSealedModifier);
+        {
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.RemoveRedundantSealedModifier); }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
             SyntaxNode root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-            SyntaxNode node = root
+            MemberDeclarationSyntax memberDeclaration = root
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
-                .FirstAncestorOrSelf(SyntaxKind.PropertyDeclaration, SyntaxKind.MethodDeclaration);
+                .FirstAncestorOrSelf<MemberDeclarationSyntax>();
 
-            if (node == null)
+            if (memberDeclaration == null)
                 return;
 
             CodeAction codeAction = CodeAction.Create(
-                "Remove 'sealed' modifier",
-                cancellationToken => RemoveModifierRefactoring.RemoveSealedModifierAsync(context.Document, node, cancellationToken),
+                "Remove sealed modifier",
+                cancellationToken => RemoveRedundantSealedModifierRefactoring.RefactorAsync(context.Document, memberDeclaration, cancellationToken),
                 DiagnosticIdentifiers.RemoveRedundantSealedModifier + EquivalenceKeySuffix);
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     [DebuggerStepThrough]
     public static class DiagnosticsExtensions
@@ -67,7 +67,7 @@ namespace Pihrtsoft.CodeAnalysis
             this SyntaxNodeAnalysisContext context,
             string fullyQualifiedMetadataName)
         {
-            return context.SemanticModel.Compilation.GetTypeByMetadataName(fullyQualifiedMetadataName);
+            return context.SemanticModel.GetTypeByMetadataName(fullyQualifiedMetadataName);
         }
     }
 }

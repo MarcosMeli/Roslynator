@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AddUsingDirectiveRefactoring
     {
@@ -21,7 +21,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             SyntaxNode node = identifierName;
             SyntaxNode prevNode = null;
 
-            while (node?.Parent?.IsKind(SyntaxKind.QualifiedName, SyntaxKind.SimpleMemberAccessExpression) == true)
+            while (node?.Parent?.IsKind(SyntaxKind.QualifiedName, SyntaxKind.AliasQualifiedName, SyntaxKind.SimpleMemberAccessExpression) == true)
             {
                 ISymbol symbol = semanticModel.GetSymbolInfo(node, context.CancellationToken).Symbol;
 
@@ -39,9 +39,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             node = prevNode;
 
-            if (node?.IsParentKind(SyntaxKind.QualifiedName, SyntaxKind.SimpleMemberAccessExpression) == true
+            if (node?.IsParentKind(SyntaxKind.QualifiedName, SyntaxKind.AliasQualifiedName, SyntaxKind.SimpleMemberAccessExpression) == true
                 && !node.IsDescendantOf(SyntaxKind.UsingDirective)
-                && !SyntaxUtility.IsUsingDirectiveInScope(node, namespaceSymbol, semanticModel, context.CancellationToken))
+                && !SyntaxAnalyzer.IsUsingDirectiveInScope(node, namespaceSymbol, semanticModel, context.CancellationToken))
             {
                 context.RegisterRefactoring(
                     $"using {namespaceSymbol.ToString()};",
@@ -57,10 +57,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
 
-            root = root.ReplaceNode(node.Parent, GetNewNode(node));
+            UsingDirectiveSyntax usingDirective = UsingDirective(ParseName(namespaceSymbol.ToString()));
 
             CompilationUnitSyntax newRoot = ((CompilationUnitSyntax)root)
-                .AddUsings(UsingDirective(ParseName(namespaceSymbol.ToString())));
+                .ReplaceNode(node.Parent, GetNewNode(node))
+                .AddUsings(keepSingleLineCommentsOnTop: true, usings: usingDirective);
 
             return document.WithSyntaxRoot(newRoot);
         }
@@ -83,7 +84,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     }
             }
 
-            Debug.Assert(false, node?.Parent?.Kind().ToString());
+            Debug.Assert(false, node.Parent?.Kind().ToString());
 
             return node;
         }

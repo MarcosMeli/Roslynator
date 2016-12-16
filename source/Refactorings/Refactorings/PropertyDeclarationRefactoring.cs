@@ -5,39 +5,39 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings.ReplacePropertyWithMethod;
+using Roslynator.CSharp.Refactorings.ReplacePropertyWithMethod;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class PropertyDeclarationRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, PropertyDeclarationSyntax propertyDeclaration)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic)
+            if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic, RefactoringIdentifiers.MarkAllMembersAsStatic)
                 && propertyDeclaration.Span.Contains(context.Span)
                 && MarkMemberAsStaticRefactoring.CanRefactor(propertyDeclaration))
             {
-                context.RegisterRefactoring(
-                    "Mark property as static",
-                    cancellationToken => MarkMemberAsStaticRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkMemberAsStatic))
+                {
+                    context.RegisterRefactoring(
+                        "Mark property as static",
+                        cancellationToken => MarkMemberAsStaticRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
+                }
 
-                MarkAllMembersAsStaticRefactoring.RegisterRefactoring(context, (ClassDeclarationSyntax)propertyDeclaration.Parent);
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkAllMembersAsStatic))
+                    MarkAllMembersAsStaticRefactoring.RegisterRefactoring(context, (ClassDeclarationSyntax)propertyDeclaration.Parent);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkContainingClassAsAbstract)
+                && propertyDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                MarkContainingClassAsAbstractRefactoring.ComputeRefactoring(context, propertyDeclaration);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplacePropertyWithMethod)
-                && propertyDeclaration.HeaderSpan().Contains(context.Span)
-                && ReplacePropertyWithMethodRefactoring.CanRefactor(context, propertyDeclaration))
+                && propertyDeclaration.HeaderSpan().Contains(context.Span))
             {
-                string propertyName = propertyDeclaration.Identifier.ValueText;
-
-                string title = $"Replace '{propertyName}' with method";
-
-                if (propertyDeclaration.AccessorList.Accessors.Count > 1)
-                    title += "s";
-
-                context.RegisterRefactoring(
-                    title,
-                    cancellationToken => ReplacePropertyWithMethodRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
+                ReplacePropertyWithMethodRefactoring.ComputeRefactoring(context, propertyDeclaration);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
@@ -58,43 +58,40 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     cancellationToken => RemovePropertyInitializerRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
             }
 
-            if (context.SupportsSemanticModel)
+            if (context.IsAnyRefactoringEnabled(
+                    RefactoringIdentifiers.ExpandProperty,
+                    RefactoringIdentifiers.ExpandPropertyAndAddBackingField)
+                && propertyDeclaration.Span.Contains(context.Span)
+                && ExpandPropertyRefactoring.CanRefactor(propertyDeclaration))
             {
-                if (context.IsAnyRefactoringEnabled(
-                        RefactoringIdentifiers.ExpandProperty,
-                        RefactoringIdentifiers.ExpandPropertyAndAddBackingField)
-                    && propertyDeclaration.Span.Contains(context.Span)
-                    && ExpandPropertyRefactoring.CanRefactor(propertyDeclaration))
-                {
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandProperty))
-                    {
-                        context.RegisterRefactoring(
-                            "Expand property",
-                            cancellationToken => ExpandPropertyRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
-                    }
-
-                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandPropertyAndAddBackingField))
-                    {
-                        context.RegisterRefactoring(
-                            "Expand property and add backing field",
-                            cancellationToken => ExpandPropertyAndAddBackingFieldRefactoring.RefactorAsync(context.Document, propertyDeclaration, context.Settings.PrefixFieldIdentifierWithUnderscore, cancellationToken));
-                    }
-                }
-
-                if (context.IsRefactoringEnabled(RefactoringIdentifiers.NotifyPropertyChanged)
-                    && await NotifyPropertyChangedRefactoring.CanRefactorAsync(context, propertyDeclaration).ConfigureAwait(false))
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandProperty))
                 {
                     context.RegisterRefactoring(
-                        "Notify property changed",
-                        cancellationToken =>
-                        {
-                            return NotifyPropertyChangedRefactoring.RefactorAsync(
-                                context.Document,
-                                propertyDeclaration,
-                                context.SupportsCSharp6,
-                                cancellationToken);
-                        });
+                        "Expand property",
+                        cancellationToken => ExpandPropertyRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
                 }
+
+                if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExpandPropertyAndAddBackingField))
+                {
+                    context.RegisterRefactoring(
+                        "Expand property and add backing field",
+                        cancellationToken => ExpandPropertyAndAddBackingFieldRefactoring.RefactorAsync(context.Document, propertyDeclaration, context.Settings.PrefixFieldIdentifierWithUnderscore, cancellationToken));
+                }
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.NotifyPropertyChanged)
+                && await NotifyPropertyChangedRefactoring.CanRefactorAsync(context, propertyDeclaration).ConfigureAwait(false))
+            {
+                context.RegisterRefactoring(
+                    "Notify property changed",
+                    cancellationToken =>
+                    {
+                        return NotifyPropertyChangedRefactoring.RefactorAsync(
+                            context.Document,
+                            propertyDeclaration,
+                            context.SupportsCSharp6,
+                            cancellationToken);
+                    });
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.MakeMemberAbstract)
@@ -106,32 +103,52 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     cancellationToken => MakeMemberAbstractRefactoring.RefactorAsync(context.Document, propertyDeclaration, cancellationToken));
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenamePropertyAccordingToTypeName)
-                && context.SupportsSemanticModel
-                && propertyDeclaration.Type != null
-                && propertyDeclaration.Identifier.Span.Contains(context.Span))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && propertyDeclaration.HeaderSpan().Contains(context.Span))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, propertyDeclaration).ConfigureAwait(false);
+            }
 
-                ITypeSymbol typeSymbol = semanticModel
-                    .GetTypeInfo(propertyDeclaration.Type, context.CancellationToken)
-                    .Type;
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.RenamePropertyAccordingToTypeName))
+            {
+                TypeSyntax type = propertyDeclaration.Type;
 
-                if (typeSymbol?.IsErrorType() == false)
+                if (type != null)
                 {
-                    string newName = SyntaxUtility.CreateIdentifier(typeSymbol);
+                    SyntaxToken identifier = propertyDeclaration.Identifier;
 
-                    if (!string.IsNullOrEmpty(newName))
+                    if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(identifier))
                     {
-                        newName = TextUtility.FirstCharToUpper(newName);
+                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                        if (!string.Equals(newName, propertyDeclaration.Identifier.ValueText, StringComparison.Ordinal))
+                        ITypeSymbol typeSymbol = semanticModel.GetTypeSymbol(type, context.CancellationToken);
+
+                        if (typeSymbol?.IsErrorType() == false)
                         {
-                            ISymbol symbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken);
+                            string newName = NameGenerator.GenerateIdentifier(typeSymbol);
 
-                            context.RegisterRefactoring(
-                                $"Rename property to '{newName}'",
-                                cancellationToken => SymbolRenamer.RenameAsync(context.Document, symbol, newName, cancellationToken));
+                            if (!string.IsNullOrEmpty(newName))
+                            {
+                                newName = TextUtility.FirstCharToUpper(newName);
+
+                                if (!string.Equals(identifier.ValueText, newName, StringComparison.Ordinal))
+                                {
+                                    ISymbol symbol = semanticModel.GetDeclaredSymbol(propertyDeclaration, context.CancellationToken);
+
+                                    bool isUnique = await NameGenerator.IsUniqueMemberNameAsync(
+                                        symbol,
+                                        newName,
+                                        context.Solution,
+                                        context.CancellationToken).ConfigureAwait(false);
+
+                                    if (isUnique)
+                                    {
+                                        context.RegisterRefactoring(
+                                            $"Rename property to '{newName}'",
+                                            cancellationToken => SymbolRenamer.RenameAsync(context.Document, symbol, newName, cancellationToken));
+                                    }
+                                }
+                            }
                         }
                     }
                 }

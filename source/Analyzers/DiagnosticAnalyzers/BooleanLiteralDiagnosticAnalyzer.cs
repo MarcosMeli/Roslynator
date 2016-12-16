@@ -2,13 +2,14 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class BooleanLiteralDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -30,131 +31,154 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (context == null)
                 throw new ArgumentNullException(nameof(context));
 
-            context.RegisterSyntaxNodeAction(f => AnalyzeEqualsExpression(f),
+            context.RegisterSyntaxNodeAction(f => AnalyzeBinaryExpression(f),
                 SyntaxKind.EqualsExpression,
                 SyntaxKind.NotEqualsExpression,
                 SyntaxKind.LogicalAndExpression,
                 SyntaxKind.LogicalOrExpression);
         }
 
-        private void AnalyzeEqualsExpression(SyntaxNodeAnalysisContext context)
+        private void AnalyzeBinaryExpression(SyntaxNodeAnalysisContext context)
         {
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
             var binaryExpression = (BinaryExpressionSyntax)context.Node;
 
-            BinaryExpressionAnalysisResult result = BinaryExpressionAnalysis.Analyze(
-                binaryExpression,
-                context.SemanticModel,
-                context.CancellationToken);
+            ExpressionSyntax left = binaryExpression.Left;
 
-            if (result == BinaryExpressionAnalysisResult.RemoveRedundantBooleanLiteral)
+            if (left?.IsMissing == false)
             {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.RemoveRedundantBooleanLiteral,
-                    binaryExpression.GetLocation());
+                ExpressionSyntax right = binaryExpression.Right;
 
-                RemoveRedundantBooleanLiteralFadeOut(context, binaryExpression);
-            }
-            else if (result == BinaryExpressionAnalysisResult.SimplifyBooleanComparison)
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.SimplifyBooleanComparison,
-                    binaryExpression.GetLocation());
+                if (right?.IsMissing == false)
+                {
+                    switch (binaryExpression.Kind())
+                    {
+                        case SyntaxKind.EqualsExpression:
+                            {
+                                AnalyzeEqualsNotEquals(
+                                    context,
+                                    binaryExpression,
+                                    left,
+                                    right,
+                                    SyntaxKind.FalseLiteralExpression,
+                                    SyntaxKind.TrueLiteralExpression);
 
-                SimplifyBooleanComparisonFadeOut(context, binaryExpression);
+                                break;
+                            }
+                        case SyntaxKind.NotEqualsExpression:
+                            {
+                                AnalyzeEqualsNotEquals(
+                                    context,
+                                    binaryExpression,
+                                    left,
+                                    right,
+                                    SyntaxKind.TrueLiteralExpression,
+                                    SyntaxKind.FalseLiteralExpression);
+
+                                break;
+                            }
+                        case SyntaxKind.LogicalAndExpression:
+                            {
+                                AnalyzerLogicalAndLogicalOr(
+                                    context,
+                                    binaryExpression,
+                                    left,
+                                    right,
+                                    SyntaxKind.TrueLiteralExpression);
+
+                                break;
+                            }
+                        case SyntaxKind.LogicalOrExpression:
+                            {
+                                AnalyzerLogicalAndLogicalOr(
+                                    context,
+                                    binaryExpression,
+                                    left,
+                                    right,
+                                    SyntaxKind.FalseLiteralExpression);
+
+                                break;
+                            }
+                    }
+                }
             }
         }
 
-        private static void RemoveRedundantBooleanLiteralFadeOut(
+        private static void AnalyzeEqualsNotEquals(
             SyntaxNodeAnalysisContext context,
-            BinaryExpressionSyntax binaryExpression)
+            BinaryExpressionSyntax binaryExpression,
+            ExpressionSyntax left,
+            ExpressionSyntax right,
+            SyntaxKind kind,
+            SyntaxKind kind2)
         {
-            DiagnosticDescriptor descriptor = DiagnosticDescriptors.RemoveRedundantBooleanLiteralFadeOut;
+            SyntaxKind leftKind = left.Kind();
 
-            context.FadeOutToken(descriptor, binaryExpression.OperatorToken);
-
-            ExpressionSyntax left = binaryExpression.Left;
-            ExpressionSyntax right = binaryExpression.Right;
-
-            switch (binaryExpression.Kind())
+            if (leftKind == kind)
             {
-                case SyntaxKind.EqualsExpression:
-                case SyntaxKind.LogicalAndExpression:
-                    {
-                        if (left.IsKind(SyntaxKind.TrueLiteralExpression))
-                        {
-                            context.FadeOutNode(descriptor, left);
-                        }
-                        else if (right.IsKind(SyntaxKind.TrueLiteralExpression))
-                        {
-                            context.FadeOutNode(descriptor, right);
-                        }
+                if (IsBooleanExpressionButNotBooleanLiteral(right, context.SemanticModel, context.CancellationToken))
+                    SimplifyBooleanComparisonRefactoring.ReportDiagnostic(context, binaryExpression);
+            }
+            else if (leftKind == kind2)
+            {
+                if (IsBooleanExpressionButNotBooleanLiteral(right, context.SemanticModel, context.CancellationToken))
+                    RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, left);
+            }
+            else
+            {
+                SyntaxKind rightKind = right.Kind();
 
-                        break;
-                    }
-                case SyntaxKind.NotEqualsExpression:
-                case SyntaxKind.LogicalOrExpression:
-                    {
-                        if (left.IsKind(SyntaxKind.FalseLiteralExpression))
-                        {
-                            context.FadeOutNode(descriptor, left);
-                        }
-                        else if (right.IsKind(SyntaxKind.FalseLiteralExpression))
-                        {
-                            context.FadeOutNode(descriptor, right);
-                        }
-
-                        break;
-                    }
+                if (rightKind == kind)
+                {
+                    if (IsBooleanExpressionButNotBooleanLiteral(left, context.SemanticModel, context.CancellationToken))
+                        SimplifyBooleanComparisonRefactoring.ReportDiagnostic(context, binaryExpression);
+                }
+                else if (rightKind == kind2)
+                {
+                    if (IsBooleanExpressionButNotBooleanLiteral(left, context.SemanticModel, context.CancellationToken))
+                        RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, right);
+                }
             }
         }
 
-        private static void SimplifyBooleanComparisonFadeOut(
+        private static void AnalyzerLogicalAndLogicalOr(
             SyntaxNodeAnalysisContext context,
-            BinaryExpressionSyntax binaryExpression)
+            BinaryExpressionSyntax binaryExpression,
+            ExpressionSyntax left,
+            ExpressionSyntax right,
+            SyntaxKind kind)
         {
-            DiagnosticDescriptor descriptor = DiagnosticDescriptors.SimplifyBooleanComparisonFadeOut;
-
-            context.FadeOutToken(descriptor, binaryExpression.OperatorToken);
-
-            ExpressionSyntax left = binaryExpression.Left;
-            ExpressionSyntax right = binaryExpression.Right;
-
-            if (binaryExpression.IsKind(SyntaxKind.EqualsExpression))
+            if (left.IsKind(kind))
             {
-                if (left.IsKind(SyntaxKind.FalseLiteralExpression))
-                {
-                    context.FadeOutNode(descriptor, left);
-
-                    if (right.IsKind(SyntaxKind.LogicalNotExpression))
-                        context.FadeOutToken(descriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
-                }
-                else if (right.IsKind(SyntaxKind.FalseLiteralExpression))
-                {
-                    context.FadeOutNode(descriptor, right);
-
-                    if (left.IsKind(SyntaxKind.LogicalNotExpression))
-                        context.FadeOutToken(descriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
-                }
+                RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, left);
             }
-            else if (binaryExpression.IsKind(SyntaxKind.NotEqualsExpression))
+            else if (right.IsKind(kind))
             {
-                if (left.IsKind(SyntaxKind.TrueLiteralExpression))
-                {
-                    context.FadeOutNode(descriptor, left);
+                RemoveRedundantBooleanLiteralRefactoring.ReportDiagnostic(context, binaryExpression, right);
+            }
+        }
 
-                    if (right.IsKind(SyntaxKind.LogicalNotExpression))
-                        context.FadeOutToken(descriptor, ((PrefixUnaryExpressionSyntax)right).OperatorToken);
-                }
-                else if (right.IsKind(SyntaxKind.TrueLiteralExpression))
-                {
-                    context.FadeOutNode(descriptor, right);
-
-                    if (left.IsKind(SyntaxKind.LogicalNotExpression))
-                        context.FadeOutToken(descriptor, ((PrefixUnaryExpressionSyntax)left).OperatorToken);
-                }
+        private static bool IsBooleanExpressionButNotBooleanLiteral(
+            ExpressionSyntax expression,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken)
+        {
+            switch (expression.Kind())
+            {
+                case SyntaxKind.TrueLiteralExpression:
+                case SyntaxKind.FalseLiteralExpression:
+                    return false;
+                case SyntaxKind.LogicalNotExpression:
+                    return true;
+                default:
+                    {
+                        return semanticModel
+                            .GetTypeInfo(expression, cancellationToken)
+                            .ConvertedType?
+                            .IsBoolean() == true;
+                    }
             }
         }
     }

@@ -2,20 +2,25 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class NamedTypeDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(DiagnosticDescriptors.RemovePartialModifierFromTypeWithSinglePart); }
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticDescriptors.RemovePartialModifierFromTypeWithSinglePart,
+                    DiagnosticDescriptors.MarkClassAsStatic,
+                    DiagnosticDescriptors.AddStaticModifierToAllPartialClassDeclarations,
+                    DiagnosticDescriptors.DeclareTypeInsideNamespace);
+            }
         }
 
         public override void Initialize(AnalysisContext context)
@@ -33,32 +38,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var symbol = (INamedTypeSymbol)context.Symbol;
 
-            TypeKind kind = symbol.TypeKind;
+            RemovePartialModifierFromTypeWithSinglePartRefactoring.Analyze(context, symbol);
 
-            if (kind == TypeKind.Class
-                || kind == TypeKind.Struct
-                || kind == TypeKind.Interface)
-            {
-                ImmutableArray<SyntaxReference> syntaxReference = symbol.DeclaringSyntaxReferences;
+            MarkClassAsStaticRefactoring.Analyze(context, symbol);
 
-                if (syntaxReference.Length == 1)
-                {
-                    var declaration = syntaxReference[0].GetSyntax(context.CancellationToken) as MemberDeclarationSyntax;
+            AddStaticModifierToAllPartialClassDeclarationsRefactoring.Analyze(context, symbol);
 
-                    if (declaration != null)
-                    {
-                        SyntaxToken partialToken = declaration.GetModifiers()
-                            .FirstOrDefault(f => f.IsKind(SyntaxKind.PartialKeyword));
-
-                        if (partialToken.IsKind(SyntaxKind.PartialKeyword))
-                        {
-                            context.ReportDiagnostic(
-                                DiagnosticDescriptors.RemovePartialModifierFromTypeWithSinglePart,
-                                partialToken.GetLocation());
-                        }
-                    }
-                }
-            }
+            DeclareTypeInsideNamespaceRefactoring.Analyze(context, symbol);
         }
     }
 }

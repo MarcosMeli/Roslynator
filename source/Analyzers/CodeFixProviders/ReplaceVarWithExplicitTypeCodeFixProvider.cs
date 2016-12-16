@@ -8,9 +8,9 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ReplaceVarWithExplicitTypeCodeFixProvider))]
     [Shared]
@@ -37,16 +37,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             if (variableDeclaration == null)
                 return;
 
-            if (variableDeclaration.Type.IsVar
-                && context.Document.SupportsSemanticModel)
+            TypeSyntax type = variableDeclaration.Type;
+
+            if (type.IsVar)
             {
                 SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
 
-                ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(variableDeclaration.Type).Type;
+                ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type).Type;
 
                 CodeAction codeAction = CodeAction.Create(
-                    $"Change type to '{typeSymbol.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}'",
-                    cancellationToken => TypeSyntaxRefactoring.ChangeTypeAsync(context.Document, variableDeclaration.Type, typeSymbol, cancellationToken),
+                    $"Change type to '{typeSymbol.ToMinimalDisplayString(semanticModel, type.Span.Start, DefaultSymbolDisplayFormat.Value)}'",
+                    cancellationToken => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, typeSymbol, cancellationToken),
                     DiagnosticIdentifiers.UseExplicitTypeInsteadOfVar + EquivalenceKeySuffix);
 
                 context.RegisterCodeFix(codeAction, context.Diagnostics);

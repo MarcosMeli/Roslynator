@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class ReplaceInterpolatedStringWithStringLiteralRefactoring
     {
@@ -34,16 +34,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (interpolatedString == null)
                 throw new ArgumentNullException(nameof(interpolatedString));
 
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             string s = UnescapeBraces(interpolatedString.ToString().Substring(1));
 
             var newNode = (LiteralExpressionSyntax)SyntaxFactory.ParseExpression(s)
                 .WithTriviaFrom(interpolatedString);
 
-            SyntaxNode newRoot = root.ReplaceNode(interpolatedString, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(interpolatedString, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private static string UnescapeBraces(string s)

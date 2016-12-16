@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class NegateOperatorRefactoring
     {
@@ -33,13 +33,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             SyntaxToken operatorToken,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            SyntaxToken newToken = SyntaxFactory.Token(GetNegatedOperatorKind(operatorToken))
+                .WithTriviaFrom(operatorToken);
 
-            SyntaxNode newRoot = oldRoot.ReplaceToken(
+            return await document.ReplaceTokenAsync(
                 operatorToken,
-                SyntaxFactory.Token(GetNegatedOperatorKind(operatorToken)).WithTriviaFrom(operatorToken));
-
-            return document.WithSyntaxRoot(newRoot);
+                newToken,
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static SyntaxKind GetNegatedOperatorKind(SyntaxToken operatorToken)

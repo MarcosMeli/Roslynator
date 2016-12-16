@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RefactoringContextExtensions
     {
@@ -56,6 +56,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         public static async Task ComputeRefactoringsAsync(this RefactoringContext context)
         {
+            Debug.WriteLine($"START {nameof(ComputeRefactoringsForTriviaInsideTrivia)}");
+            ComputeRefactoringsForTriviaInsideTrivia(context);
+            Debug.WriteLine($"END {nameof(ComputeRefactoringsForTriviaInsideTrivia)}");
+
             Debug.WriteLine($"START {nameof(ComputeRefactoringsForNodeInsideTrivia)}");
             ComputeRefactoringsForNodeInsideTrivia(context);
             Debug.WriteLine($"END {nameof(ComputeRefactoringsForNodeInsideTrivia)}");
@@ -92,6 +96,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             bool fInterpolatedStringText = false;
             bool fElseClause = false;
             bool fCaseSwitchLabel = false;
+            bool fUsingDirective = false;
 
             bool fExpression = false;
             bool fAnonymousMethod = false;
@@ -112,6 +117,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             bool fPostfixUnaryExpression = false;
             bool fPrefixUnaryExpression = false;
             bool fAwaitExpression = false;
+            bool fCastExpression = false;
 
             bool fMemberDeclaration = false;
             bool fStatement = false;
@@ -126,8 +132,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             bool fUsingStatement = false;
             bool fWhileStatement = false;
             bool fYieldReturnStatement = false;
+            bool fLockStatement = false;
             bool fBlock = false;
             bool fStatementRefactoring = false;
+            bool fThrowStatement = false;
 
             SyntaxNode firstNode = node;
 
@@ -195,7 +203,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     if (!fParameterList
                         && kind == SyntaxKind.ParameterList)
                     {
-                        await ParameterListRefactoring.ComputeRefactoringsAsync(context, (ParameterListSyntax)node);
+                        await ParameterListRefactoring.ComputeRefactoringsAsync(context, (ParameterListSyntax)node).ConfigureAwait(false);
                         fParameterList = true;
                         continue;
                     }
@@ -248,12 +256,20 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         continue;
                     }
 
+                    if (!fUsingDirective
+                        && kind == SyntaxKind.UsingDirective)
+                    {
+                        UsingDirectiveRefactoring.ComputeRefactoring(context, (UsingDirectiveSyntax)node);
+                        fUsingDirective = true;
+                        continue;
+                    }
+
                     var expression = node as ExpressionSyntax;
                     if (expression != null)
                     {
                         if (!fExpression)
                         {
-                            await ExpressionRefactoring.ComputeRefactorings(context, expression);
+                            await ExpressionRefactoring.ComputeRefactoringsAsync(context, expression).ConfigureAwait(false);
                             fExpression = true;
                         }
 
@@ -287,14 +303,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         if (!fConditionalExpression
                             && kind == SyntaxKind.ConditionalExpression)
                         {
-                            ConditionalExpressionRefactoring.ComputeRefactorings(context, (ConditionalExpressionSyntax)expression);
+                            await ConditionalExpressionRefactoring.ComputeRefactoringsAsync(context, (ConditionalExpressionSyntax)expression).ConfigureAwait(false);
                             fConditionalExpression = true;
                         }
 
                         if (!fQualifiedName
                             && kind == SyntaxKind.QualifiedName)
                         {
-                            await QualifiedNameRefactoring.ComputeRefactoringsAsync(context, (QualifiedNameSyntax)expression);
+                            await QualifiedNameRefactoring.ComputeRefactoringsAsync(context, (QualifiedNameSyntax)expression).ConfigureAwait(false);
                             fQualifiedName = true;
                         }
 
@@ -351,7 +367,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             var literalExpression = node as LiteralExpressionSyntax;
                             if (literalExpression != null)
                             {
-                                LiteralExpressionRefactoring.ComputeRefactorings(context, literalExpression);
+                                await LiteralExpressionRefactoring.ComputeRefactoringsAsync(context, literalExpression).ConfigureAwait(false);
                                 fLiteralExpression = true;
                             }
                         }
@@ -397,6 +413,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             fAwaitExpression = true;
                         }
 
+                        if (!fCastExpression
+                            && kind == SyntaxKind.CastExpression)
+                        {
+                            CastExpressionRefactoring.ComputeRefactorings(context, (CastExpressionSyntax)node);
+                            fCastExpression = true;
+                        }
                         continue;
                     }
 
@@ -476,7 +498,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         if (!fUsingStatement
                             && kind == SyntaxKind.UsingStatement)
                         {
-                            UsingStatementRefactoring.ComputeRefactorings(context, (UsingStatementSyntax)statement);
+                            await UsingStatementRefactoring.ComputeRefactoringsAsync(context, (UsingStatementSyntax)statement).ConfigureAwait(false);
                             fUsingStatement = true;
                         }
 
@@ -492,9 +514,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                             var yieldStatement = node as YieldStatementSyntax;
                             if (yieldStatement != null)
                             {
-                                await YieldReturnStatementRefactoring.ComputeRefactoringsAsync(context, yieldStatement).ConfigureAwait(false);
+                                await YieldStatementRefactoring.ComputeRefactoringsAsync(context, yieldStatement).ConfigureAwait(false);
                                 fYieldReturnStatement = true;
                             }
+                        }
+
+                        if (!fLockStatement
+                            && kind == SyntaxKind.LockStatement)
+                        {
+                            LockStatementRefactoring.ComputeRefactorings(context, (LockStatementSyntax)node);
+                            fLockStatement = true;
                         }
 
                         if (!fBlock
@@ -502,6 +531,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         {
                             await BlockRefactoring.ComputeRefactoringAsync(context, (BlockSyntax)node).ConfigureAwait(false);
                             fBlock = true;
+                        }
+
+                        if (!fThrowStatement
+                            && kind == SyntaxKind.ThrowStatement)
+                        {
+                            await ThrowStatementRefactoring.ComputeRefactoringAsync(context, (ThrowStatementSyntax)node).ConfigureAwait(false);
+                            fThrowStatement = true;
                         }
 
                         if (!fStatement)
@@ -560,12 +596,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         {
                             DirectiveTriviaRefactoring.ComputeRefactorings(context, directiveTrivia);
 
-                            if (node.IsKind(
-                                SyntaxKind.RegionDirectiveTrivia,
-                                SyntaxKind.EndRegionDirectiveTrivia))
-                            {
+                            if (node.IsKind(SyntaxKind.RegionDirectiveTrivia,SyntaxKind.EndRegionDirectiveTrivia))
                                 RegionDirectiveTriviaRefactoring.ComputeRefactorings(context);
-                            }
+
+                            RemoveAllPreprocessorDirectivesRefactoring.ComputeRefactorings(context);
+
+                            if (node.IsKind(SyntaxKind.RegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia))
+                                RegionDirectiveTriviaRefactoring.ComputeRefactorings(context, (RegionDirectiveTriviaSyntax)node);
 
                             fDirectiveTrivia = true;
                         }
@@ -622,18 +659,18 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     }
             }
 
-            if (!trivia.IsCommentTrivia())
-            {
-                SyntaxTrivia trivia2 = context.FindTriviaInsideTrivia();
+            if (!trivia.IsPartOfStructuredTrivia())
+                CommentTriviaRefactoring.ComputeRefactorings(context, trivia);
+        }
 
-                if (trivia.Span != trivia2.Span)
-                {
-                    trivia = trivia2;
-                    Debug.WriteLine(trivia.Kind().ToString());
-                }
-            }
+        public static void ComputeRefactoringsForTriviaInsideTrivia(this RefactoringContext context)
+        {
+            SyntaxTrivia trivia = context.FindTriviaInsideTrivia();
 
-            CommentTriviaRefactoring.ComputeRefactorings(context, trivia);
+            Debug.WriteLine(trivia.Kind().ToString());
+
+            if (trivia.IsPartOfStructuredTrivia())
+                CommentTriviaRefactoring.ComputeRefactorings(context, trivia);
         }
     }
 }

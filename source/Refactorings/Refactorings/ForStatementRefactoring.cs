@@ -3,16 +3,14 @@
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ForStatementRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, ForStatementSyntax forStatement)
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForWithForEach)
-                && context.SupportsSemanticModel
-                && context.Span.IsEmpty
-                && forStatement.Span.Contains(context.Span)
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(forStatement)
                 && (await ReplaceForWithForEachRefactoring.CanRefactorAsync(context, forStatement).ConfigureAwait(false)))
             {
                 context.RegisterRefactoring(
@@ -20,9 +18,16 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     cancellationToken => ReplaceForWithForEachRefactoring.RefactorAsync(context.Document, forStatement, cancellationToken));
             }
 
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceForWithWhile)
+                && context.Span.IsBetweenSpans(forStatement))
+            {
+                context.RegisterRefactoring(
+                    "Replace for with while",
+                    cancellationToken => ReplaceForWithWhileRefactoring.RefactorAsync(context.Document, forStatement, cancellationToken));
+            }
+
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReverseForLoop)
-                && context.Span.IsEmpty
-                && forStatement.Span.Contains(context.Span))
+                && context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(forStatement))
             {
                 if (ReverseForLoopRefactoring.CanRefactor(forStatement))
                 {

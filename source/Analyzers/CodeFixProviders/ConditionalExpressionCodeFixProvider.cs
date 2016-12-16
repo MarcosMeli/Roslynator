@@ -2,15 +2,14 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ConditionalExpressionCodeFixProvider))]
     [Shared]
@@ -22,7 +21,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             {
                 return ImmutableArray.Create(
                     DiagnosticIdentifiers.WrapConditionalExpressionConditionInParentheses,
-                    DiagnosticIdentifiers.ReplaceConditionalExpressionWithCoalesceExpression);
+                    DiagnosticIdentifiers.ReplaceConditionalExpressionWithCoalesceExpression,
+                    DiagnosticIdentifiers.SimplifyConditionalExpression);
             }
         }
 
@@ -30,7 +30,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
         {
             SyntaxNode root = await context.Document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
 
-            ConditionalExpressionSyntax node = root
+            ConditionalExpressionSyntax conditionalExpression = root
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
                 .FirstAncestorOrSelf<ConditionalExpressionSyntax>();
 
@@ -42,11 +42,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                         {
                             CodeAction codeAction = CodeAction.Create(
                                 "Wrap condition in parentheses",
-                                cancellationToken => AddParenthesesToConditionAsync(context.Document, node, cancellationToken),
+                                cancellationToken => WrapConditionalExpressionConditionInParenthesesRefactoring.RefactorAsync(context.Document, conditionalExpression, cancellationToken),
                                 diagnostic.Id + EquivalenceKeySuffix);
 
                             context.RegisterCodeFix(codeAction, diagnostic);
-
                             break;
                         }
                     case DiagnosticIdentifiers.ReplaceConditionalExpressionWithCoalesceExpression:
@@ -55,67 +54,34 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                                 "Replace ?: with ??",
                                 cancellationToken =>
                                 {
-                                    return UseCoalesceExpressionInsteadOfConditionalExpressionAsync(
+                                    return ReplaceConditionalExpressionWithCoalesceExpressionRefactoring.RefactorAsync(
                                         context.Document,
-                                        node,
+                                        conditionalExpression,
                                         cancellationToken);
                                 },
                                 diagnostic.Id + EquivalenceKeySuffix);
 
                             context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.SimplifyConditionalExpression:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Simplify conditional expression",
+                                cancellationToken =>
+                                {
+                                    return SimplifyConditionalExpressionRefactoring.RefactorAsync(
+                                        context.Document,
+                                        conditionalExpression,
+                                        cancellationToken);
+                                },
+                                diagnostic.Id + EquivalenceKeySuffix);
 
+                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                 }
             }
-        }
-
-        private static async Task<Document> AddParenthesesToConditionAsync(
-            Document document,
-            ConditionalExpressionSyntax conditionalExpression,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            ConditionalExpressionSyntax newNode = conditionalExpression
-                .WithCondition(
-                    SyntaxFactory.ParenthesizedExpression(
-                        conditionalExpression.Condition.WithoutTrivia()
-                    ).WithTriviaFrom(conditionalExpression.Condition)
-                ).WithFormatterAnnotation();
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(conditionalExpression, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static async Task<Document> UseCoalesceExpressionInsteadOfConditionalExpressionAsync(
-            Document document,
-            ConditionalExpressionSyntax conditionalExpression,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            var binaryExpression = (BinaryExpressionSyntax)conditionalExpression.Condition.UnwrapParentheses();
-
-            ExpressionSyntax left = (binaryExpression.IsKind(SyntaxKind.EqualsExpression))
-                ? conditionalExpression.WhenFalse
-                : conditionalExpression.WhenTrue;
-
-            ExpressionSyntax right = (binaryExpression.IsKind(SyntaxKind.EqualsExpression))
-                ? conditionalExpression.WhenTrue
-                : conditionalExpression.WhenFalse;
-
-            BinaryExpressionSyntax newNode = SyntaxFactory.BinaryExpression(
-                SyntaxKind.CoalesceExpression,
-                left.WithoutTrivia(),
-                right.WithoutTrivia());
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(
-                conditionalExpression,
-                newNode.WithTriviaFrom(conditionalExpression));
-
-            return document.WithSyntaxRoot(newRoot);
         }
     }
 }

@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class MergeAssignmentExpressionWithReturnStatementRefactoring
     {
@@ -58,8 +58,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ReturnStatementSyntax returnStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var block = (BlockSyntax)statement.Parent;
 
             SyntaxList<StatementSyntax> statements = block.Statements;
@@ -78,9 +76,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
             newStatements = newStatements.Replace(newStatements[index], newReturnStatement);
 
-            root = root.ReplaceNode(block, block.WithStatements(newStatements));
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(block, block.WithStatements(newStatements), cancellationToken).ConfigureAwait(false);
         }
     }
 }

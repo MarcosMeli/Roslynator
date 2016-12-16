@@ -6,16 +6,23 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AssignmentExpressionDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
         {
-            get { return ImmutableArray.Create(DiagnosticDescriptors.UsePostfixUnaryOperatorInsteadOfAssignment); }
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticDescriptors.UsePostfixUnaryOperatorInsteadOfAssignment,
+                    DiagnosticDescriptors.UsePostfixUnaryOperatorInsteadOfAssignmentFadeOut,
+                    DiagnosticDescriptors.RemoveRedundantDelegateCreation,
+                    DiagnosticDescriptors.RemoveRedundantDelegateCreationFadeOut);
+            }
         }
 
         public override void Initialize(AnalysisContext context)
@@ -34,23 +41,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var assignment = (AssignmentExpressionSyntax)context.Node;
 
-            ExpressionSyntax left = assignment.Left;
-            ExpressionSyntax right = assignment.Right;
+            UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.Analyze(context, assignment);
 
-            if (left?.IsMissing == false
-                && right?.IsNumericLiteralExpression(1) == true)
-            {
-                ITypeSymbol typeSymbol = context.SemanticModel.GetTypeInfo(left, context.CancellationToken).Type;
-
-                if (typeSymbol?.SupportsPrefixOrPostfixUnaryOperator() == true
-                    && !assignment.SpanContainsDirectives())
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.UsePostfixUnaryOperatorInsteadOfAssignment,
-                        assignment.GetLocation(),
-                        UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.GetOperatorText(assignment));
-                }
-            }
+            RemoveRedundantDelegateCreationRefactoring.Analyze(context, assignment);
         }
     }
 }

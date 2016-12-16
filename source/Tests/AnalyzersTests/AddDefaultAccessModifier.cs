@@ -2,7 +2,7 @@
 using System;
 using System.Collections.ObjectModel;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Analyzers.Tests
+namespace Roslynator.CSharp.Analyzers.Tests
 {
     interface InterfaceName123
     {
@@ -18,7 +18,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Analyzers.Tests
 
     delegate void DelegateName123();
 
-    class AddDefaultAccessModifier
+    static class AddDefaultAccessModifier
     {
         interface InterfaceName
         {
@@ -148,7 +148,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Analyzers.Tests
 
     /*****/
 
-    partial class PartialClass2
+    static partial class PartialClass2
     {
     }
 

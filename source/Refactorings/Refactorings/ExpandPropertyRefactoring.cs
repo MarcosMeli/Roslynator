@@ -1,5 +1,6 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,18 +9,16 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ExpandPropertyRefactoring
     {
         public static bool CanRefactor(PropertyDeclarationSyntax propertyDeclaration)
         {
-            return propertyDeclaration.Parent != null
-                && propertyDeclaration.Parent.IsKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration)
-                && propertyDeclaration.AccessorList != null
+            return propertyDeclaration.IsParentKind(SyntaxKind.ClassDeclaration, SyntaxKind.StructDeclaration)
                 && propertyDeclaration
-                    .AccessorList
-                    .Accessors.All(f => f.Body == null);
+                    .AccessorList?
+                    .Accessors.All(f => f.Body == null) == true;
         }
 
         public static async Task<Document> RefactorAsync(
@@ -27,33 +26,59 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             PropertyDeclarationSyntax propertyDeclaration,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            PropertyDeclarationSyntax newNode = ExpandProperty(propertyDeclaration);
 
-            PropertyDeclarationSyntax newPropertyDeclaration = ExpandProperty(propertyDeclaration)
+            newNode = ReplaceAbstractWithVirtual(newNode);
+
+            newNode = newNode
                 .WithTriviaFrom(propertyDeclaration)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(propertyDeclaration, newPropertyDeclaration);
+            return await document.ReplaceNodeAsync(propertyDeclaration, newNode, cancellationToken).ConfigureAwait(false);
+        }
 
-            return document.WithSyntaxRoot(newRoot);
+        internal static PropertyDeclarationSyntax ReplaceAbstractWithVirtual(PropertyDeclarationSyntax propertyDeclaration)
+        {
+            SyntaxTokenList modifiers = propertyDeclaration.Modifiers;
+
+            int index = modifiers.IndexOf(SyntaxKind.AbstractKeyword);
+
+            if (index != -1)
+                propertyDeclaration = propertyDeclaration.WithModifiers(modifiers.ReplaceAt(index, CSharpFactory.VirtualToken().WithTriviaFrom(modifiers[index])));
+
+            return propertyDeclaration;
         }
 
         private static PropertyDeclarationSyntax ExpandProperty(PropertyDeclarationSyntax propertyDeclaration)
         {
-            AccessorListSyntax accessorList = AccessorList(
-                List(propertyDeclaration
-                    .AccessorList
-                    .Accessors.Select(accessor => accessor
-                        .WithBody(Block())
-                        .WithoutSemicolonToken())));
+            AccessorListSyntax accessorList = AccessorList(List(CreateAccessors(propertyDeclaration)));
 
             accessorList = SyntaxRemover.RemoveWhitespaceOrEndOfLine(accessorList)
-                .WithCloseBraceToken(accessorList.CloseBraceToken.WithLeadingTrivia(CSharpFactory.NewLine));
+                .WithCloseBraceToken(accessorList.CloseBraceToken.WithLeadingTrivia(CSharpFactory.NewLineTrivia()));
 
             return propertyDeclaration
                 .WithoutInitializer()
                 .WithoutSemicolonToken()
                 .WithAccessorList(accessorList);
+        }
+
+        private static IEnumerable<AccessorDeclarationSyntax> CreateAccessors(PropertyDeclarationSyntax propertyDeclaration)
+        {
+            foreach (AccessorDeclarationSyntax accessor in propertyDeclaration.AccessorList.Accessors)
+            {
+                if (accessor.IsGetter())
+                {
+                    ExpressionSyntax value = propertyDeclaration.Initializer?.Value;
+
+                    if (value != null)
+                    {
+                        yield return accessor.WithBody(Block(ReturnStatement(value))).WithoutSemicolonToken();
+                        continue;
+                    }
+                }
+
+                yield return accessor.WithBody(Block()).WithoutSemicolonToken();
+            }
         }
     }
 }

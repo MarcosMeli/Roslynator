@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class InitializerExpressionRefactoring
     {
@@ -18,9 +18,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 initializer = (InitializerExpressionSyntax)initializer.Parent;
             }
 
-            if (context.Span.IsEmpty
-                || context.Span.IsBetweenSpans(initializer)
-                || context.Span.IsBetweenSpans(initializer.Expressions))
+            if (context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer)
+                || context.Span.IsEmptyAndContainedInSpanOrBetweenSpans(initializer.Expressions))
             {
                 SeparatedSyntaxList<ExpressionSyntax> expressions = initializer.Expressions;
 

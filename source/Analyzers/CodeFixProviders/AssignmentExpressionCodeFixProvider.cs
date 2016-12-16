@@ -8,9 +8,9 @@ using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(AssignmentExpressionCodeFixProvider))]
     [Shared]
@@ -21,8 +21,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             get
             {
                 return ImmutableArray.Create(
-                    DiagnosticIdentifiers.SimplifyAssignmentExpression,
-                    DiagnosticIdentifiers.UsePostfixUnaryOperatorInsteadOfAssignment);
+                    DiagnosticIdentifiers.UseCompoundAssignment,
+                    DiagnosticIdentifiers.UsePostfixUnaryOperatorInsteadOfAssignment,
+                    DiagnosticIdentifiers.RemoveRedundantDelegateCreation);
             }
         }
 
@@ -41,17 +42,15 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             {
                 switch (diagnostic.Id)
                 {
-                    case DiagnosticIdentifiers.SimplifyAssignmentExpression:
+                    case DiagnosticIdentifiers.UseCompoundAssignment:
                         {
+                            var binaryExpression = (BinaryExpressionSyntax)assignment.Right;
+
+                            string operatorText = UseCompoundAssignmentRefactoring.GetCompoundOperatorText(binaryExpression);
+
                             CodeAction codeAction = CodeAction.Create(
-                                "Simplify assignment expression",
-                                cancellationToken =>
-                                {
-                                    return SimplifyAssignmentExpressionRefactoring.RefactorAsync(
-                                        context.Document,
-                                        assignment,
-                                        cancellationToken);
-                                },
+                                $"Use {operatorText} operator",
+                                cancellationToken => UseCompoundAssignmentRefactoring.RefactorAsync(context.Document, assignment, cancellationToken),
                                 diagnostic.Id + EquivalenceKeySuffix);
 
                             context.RegisterCodeFix(codeAction, diagnostic);
@@ -65,12 +64,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
 
                             CodeAction codeAction = CodeAction.Create(
                                 $"Use {operatorText} operator",
+                                c => UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.RefactorAsync(context.Document, assignment, kind, c),
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.RemoveRedundantDelegateCreation:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Remove redundant delegate creation",
                                 cancellationToken =>
                                 {
-                                    return UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.RefactorAsync(
+                                    return RemoveRedundantDelegateCreationRefactoring.RefactorAsync(
                                         context.Document,
-                                        assignment,
-                                        kind,
+                                        (ObjectCreationExpressionSyntax)assignment.Right,
                                         cancellationToken);
                                 },
                                 diagnostic.Id + EquivalenceKeySuffix);

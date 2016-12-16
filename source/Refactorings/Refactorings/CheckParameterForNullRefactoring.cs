@@ -12,9 +12,9 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class CheckParameterForNullRefactoring
     {
@@ -23,7 +23,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (parameter.Identifier.Span.Contains(context.Span)
                 && IsValid(parameter))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync();
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
                 if (CanRefactor(parameter, semanticModel, context.CancellationToken))
                     RegisterRefactoring(context, parameter);
@@ -32,7 +32,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ParameterListSyntax parameterList)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync();
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
             ParameterSyntax[] parameters = GetSelectedParameters(parameterList, context.Span)
                 .Where(parameter => IsValid(parameter) && CanRefactor(parameter, semanticModel, context.CancellationToken))
@@ -86,8 +86,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ImmutableArray<ParameterSyntax> parameters,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
             BlockSyntax body = GetBody(parameters[0]);
@@ -99,15 +97,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             List<IfStatementSyntax> ifStatements = CreateNullChecks(parameters);
 
             if (index > 0)
-                ifStatements[0] = ifStatements[0].WithLeadingTrivia(NewLine);
+                ifStatements[0] = ifStatements[0].WithLeadingTrivia(NewLineTrivia());
 
             BlockSyntax newBody = body
                 .WithStatements(body.Statements.InsertRange(index, ifStatements))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = root.ReplaceNode(body, newBody);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(body, newBody, cancellationToken).ConfigureAwait(false);
         }
 
         private static List<IfStatementSyntax> CreateNullChecks(ImmutableArray<ParameterSyntax> parameters)
@@ -126,13 +122,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 }
                 else
                 {
-                    ifStatement = ifStatement.WithLeadingTrivia(NewLine);
+                    ifStatement = ifStatement.WithLeadingTrivia(NewLineTrivia());
                 }
 
                 ifStatements.Add(ifStatement);
             }
 
-            ifStatements[ifStatements.Count - 1] = ifStatements[ifStatements.Count - 1].WithTrailingTrivia(NewLine, NewLine);
+            ifStatements[ifStatements.Count - 1] = ifStatements[ifStatements.Count - 1].WithTrailingTrivia(NewLineTrivia(), NewLineTrivia());
 
             return ifStatements;
         }
@@ -145,7 +141,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     NullLiteralExpression()),
                 ThrowStatement(
                     ObjectCreationExpression(
-                        type: ParseName("System.ArgumentNullException").WithSimplifierAnnotation(),
+                        type: ParseName(MetadataNames.System_ArgumentNullException).WithSimplifierAnnotation(),
                         argumentList: ArgumentList(Argument(NameOf(identifier))),
                         initializer: null)));
         }
@@ -206,7 +202,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         {
                             var objectCreation = (ObjectCreationExpressionSyntax)throwStatement.Expression;
 
-                            INamedTypeSymbol exceptionType = semanticModel.Compilation.GetTypeByMetadataName("System.ArgumentNullException");
+                            INamedTypeSymbol exceptionType = semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_ArgumentNullException);
 
                             ISymbol type = semanticModel.GetSymbolInfo(objectCreation.Type, cancellationToken).Symbol;
 
@@ -267,7 +263,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             return parameter.Type != null
                 && !parameter.Identifier.IsMissing
-                && parameter.Parent?.IsKind(SyntaxKind.ParameterList) == true;
+                && parameter.IsParentKind(SyntaxKind.ParameterList);
         }
 
         private static IEnumerable<ParameterSyntax> GetSelectedParameters(ParameterListSyntax parameterList, TextSpan span)

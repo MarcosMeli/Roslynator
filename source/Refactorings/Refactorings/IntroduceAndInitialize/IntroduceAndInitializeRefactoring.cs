@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.IntroduceAndInitialize
+namespace Roslynator.CSharp.Refactorings.IntroduceAndInitialize
 {
     internal abstract class IntroduceAndInitializeRefactoring
     {
@@ -110,11 +110,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.IntroduceAndInitialize
             Document document,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             ConstructorDeclarationSyntax constructor = Constructor;
 
-            MemberDeclarationSyntax containingMember = constructor.GetContainingMember();
+            MemberDeclarationSyntax containingMember = constructor.GetParentMember();
 
             SyntaxList<MemberDeclarationSyntax> members = containingMember.GetMembers();
 
@@ -126,11 +124,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.IntroduceAndInitialize
                 GetDeclarationIndex(members),
                 CreateDeclarations());
 
-            SyntaxNode newRoot = root.ReplaceNode(
+            return await document.ReplaceNodeAsync(
                 containingMember,
-                containingMember.SetMembers(newMembers));
-
-            return document.WithSyntaxRoot(newRoot);
+                containingMember.SetMembers(newMembers),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private IEnumerable<ExpressionStatementSyntax> CreateAssignments()
@@ -155,13 +152,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.IntroduceAndInitialize
         private static bool IsValid(ParameterSyntax parameter)
         {
             if (parameter.Type != null
-                && !parameter.Identifier.IsMissing
-                && parameter.Parent?.IsKind(SyntaxKind.ParameterList) == true)
+                && !parameter.Identifier.IsMissing)
             {
                 SyntaxNode parent = parameter.Parent;
 
-                if (parent.Parent?.IsKind(SyntaxKind.ConstructorDeclaration) == true)
-                    return true;
+                if (parent?.IsKind(SyntaxKind.ParameterList) == true)
+                {
+                    parent = parent.Parent;
+
+                    return parent?.IsKind(SyntaxKind.ConstructorDeclaration) == true
+                        && !((ConstructorDeclarationSyntax)parent).Modifiers.Contains(SyntaxKind.StaticKeyword);
+                }
             }
 
             return false;

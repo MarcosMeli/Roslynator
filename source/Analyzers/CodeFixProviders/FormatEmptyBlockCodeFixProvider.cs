@@ -2,21 +2,23 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(FormatEmptyBlockCodeFixProvider))]
     [Shared]
     public class FormatEmptyBlockCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.FormatEmptyBlock);
+        {
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.FormatEmptyBlock); }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -31,27 +33,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
 
             CodeAction codeAction = CodeAction.Create(
                 "Format braces",
-                cancellationToken => FormatBlockAsync(context.Document, block, cancellationToken),
+                cancellationToken => FormatEmptyBlockRefactoring.RefactorAsync(context.Document, block, cancellationToken),
                 DiagnosticIdentifiers.FormatEmptyBlock + EquivalenceKeySuffix);
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);
-        }
-
-        private static async Task<Document> FormatBlockAsync(
-            Document document,
-            BlockSyntax block,
-            CancellationToken cancellationToken)
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            BlockSyntax newBlock = block
-                .WithOpenBraceToken(block.OpenBraceToken.WithoutTrailingTrivia())
-                .WithCloseBraceToken(block.CloseBraceToken.WithLeadingTrivia(CSharpFactory.NewLine))
-                .WithFormatterAnnotation();
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(block, newBlock);
-
-            return document.WithSyntaxRoot(newRoot);
         }
     }
 }

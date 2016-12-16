@@ -4,26 +4,24 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.Tests
 {
     public static class ReplaceExpressionWithConstantValueRefactoring
     {
+        private const string StringConstant = "abc";
         private const string StringNullConstant = null;
         private const bool BooleanConstant = true;
         private const char CharConstant = 'a';
         private const int Int32Constant = 1;
+        private const int Int64Constant = Int32Constant + 1;
 
-        private const string EmptyString = "";
-
-        public static string Foo()
+        public static void Foo()
         {
-            string s = EmptyString;
-
+            string s = StringConstant;
             string s2 = StringNullConstant;
             bool f = BooleanConstant;
             char ch = CharConstant;
             int i = Int32Constant;
+            int l = Int64Constant;
 
             const string x = "x";
-            string xx = x;
-
-            return s;
+            string x2 = x;
         }
     }
 }

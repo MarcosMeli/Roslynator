@@ -10,7 +10,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.FindSymbols;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class ReplaceForEachWithForRefactoring
     {
@@ -130,7 +130,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                 if (typeSymbol.IsNamedType())
                 {
-                    INamedTypeSymbol immutableArraySymbol = semanticModel.Compilation.GetTypeByMetadataName("System.Collections.Immutable.ImmutableArray`1");
+                    INamedTypeSymbol immutableArraySymbol = semanticModel.GetTypeByMetadataName(MetadataNames.System_Collections_Immutable_ImmutableArray_T);
 
                     if (immutableArraySymbol != null
                         && ((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(immutableArraySymbol))

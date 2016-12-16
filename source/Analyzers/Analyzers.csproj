@@ -8,7 +8,7 @@
     <ProjectGuid>{2F2B32B2-31D8-4D52-A05F-0D909BD07EBE}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pihrtsoft.CodeAnalysis.CSharp</RootNamespace>
+    <RootNamespace>Roslynator.CSharp</RootNamespace>
     <AssemblyName>Roslynator.CSharp.Analyzers</AssemblyName>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <TargetFrameworkProfile>Profile7</TargetFrameworkProfile>
@@ -41,15 +41,111 @@
     <AssemblyOriginatorKeyFile>Roslynator.CSharp.Analyzers.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Analysis\BinaryExpressionAnalysis.cs" />
-    <Compile Include="Analysis\BinaryExpressionAnalysisResult.cs" />
-    <Compile Include="Analysis\UsingStatementAnalysis.cs" />
-    <Compile Include="Analyzers\FormatEachStatementOnSeparateLineAnalyzer.cs" />
-    <Compile Include="Analyzers\MergeIfStatementWithNestedIfStatementAnalyzer.cs" />
-    <Compile Include="Analyzers\MergeLocalDeclarationWithReturnStatementAnalyzer.cs" />
-    <Compile Include="Analyzers\RedundantEmptyLineAnalyzer.cs" />
+    <Compile Include="IfElseAnalysis.cs" />
+    <Compile Include="Refactorings\AddConstructorArgumentListRefactoring.cs" />
+    <Compile Include="Refactorings\AddDefaultAccessModifierRefactoring.cs" />
+    <Compile Include="Refactorings\AddEmptyLineAfterEmbeddedStatementRefactoring.cs" />
+    <Compile Include="Refactorings\AddEmptyLineAfterLastStatementInDoStatementRefactoring.cs" />
+    <Compile Include="Refactorings\AddEmptyLineBetweenDeclarationsRefactoring.cs" />
+    <Compile Include="Refactorings\AddStaticModifierToAllPartialClassDeclarationsRefactoring.cs" />
+    <Compile Include="Refactorings\AsynchronousMethodNameShouldEndWithAsyncRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidEmptyCatchClauseThatCatchesSystemExceptionRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidImplicitlyTypedArrayRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidInterpolatedStringWithNoInterpolationRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidLockingOnPubliclyAccessibleInstanceRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidNullLiteralExpressionOnLeftSideOfBinaryExpressionRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidSemicolonAtEndOfDeclarationRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidUsageOfForStatementToCreateInfiniteLoopRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidUsageOfTabRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidUsageOfUsingAliasDirectiveRefactoring.cs" />
+    <Compile Include="Refactorings\AvoidUsageOfWhileStatementToCreateInfiniteLoopRefactoring.cs" />
+    <Compile Include="Refactorings\DeclareEachAttributeSeparatelyRefactoring.cs" />
+    <Compile Include="Refactorings\DeclareEachTypeInSeparateFileRefactoring.cs" />
+    <Compile Include="Refactorings\DeclareTypeInsideNamespaceRefactoring.cs" />
+    <Compile Include="Refactorings\DeclareUsingDirectiveOnTopLevelRefactoring.cs" />
+    <Compile Include="Refactorings\DefaultLabelShouldBeLastLabelInSwitchSectionRefactoring.cs" />
+    <Compile Include="Refactorings\FormatAccessorListRefactoring.cs" />
+    <Compile Include="Refactorings\FormatBinaryOperatorOnNextLineRefactoring.cs" />
+    <Compile Include="Refactorings\FormatDeclarationBracesRefactoring.cs" />
+    <Compile Include="Refactorings\FormatEachEnumMemberOnSeparateLineRefactoring.cs" />
+    <Compile Include="Refactorings\FormatEmbeddedStatementOnSeparateLineRefactoring.cs" />
+    <Compile Include="Refactorings\FormatEmptyBlockRefactoring.cs" />
+    <Compile Include="Refactorings\FormatSwitchSectionStatementOnSeparateLineRefactoring.cs" />
+    <Compile Include="Refactorings\MergeElseClauseWithNestedIfStatementRefactoring.cs" />
+    <Compile Include="Refactorings\MergeIfStatementWithNestedIfStatementRefactoring.cs" />
+    <Compile Include="Refactorings\FormatEachStatementOnSeparateLineRefactoring.cs" />
+    <Compile Include="CodeFixProviders\DestructorDeclarationCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\DeclareTypeInsideNamespaceCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\RemoveRedundantBooleanLiteralCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\DocumentCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\ClassDeclarationCodeFixProvider.cs" />
+    <Compile Include="DiagnosticAnalyzers\DestructorDeclarationDiagnosticAnalyzer.cs" />
+    <Compile Include="Refactorings\CombineEnumerableWhereMethodChainRefactoring.cs" />
+    <Compile Include="Refactorings\MergeLocalDeclarationWithReturnStatementRefactoring.cs" />
+    <Compile Include="Refactorings\NonAsynchronousMethodNameShouldNotEndWithAsyncRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveBracesRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyArgumentListRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyAttributeArgumentListRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyDestructorRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyElseClauseRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyFinallyClauseRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyInitializerRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyNamespaceDeclarationRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyRegionRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEmptyStatementRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveEnumDefaultUnderlyingTypeRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveOriginalExceptionFromThrowStatementRefactoring.cs" />
+    <Compile Include="Refactorings\RemovePartialModifierFromTypeWithSinglePartRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantBaseConstructorCallRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantBracesRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantCallRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantCommaInInitializerRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantConstructorRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantDefaultSwitchSectionRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantDelegateCreationRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantEmptyLineRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantParenthesesRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantSealedModifierRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantStringToCharArrayCallRefactoring.cs" />
+    <Compile Include="Refactorings\RemoveRedundantToStringCallRefactoring.cs" />
+    <Compile Include="CodeFixProviders\InterpolationCodeFixProvider.cs" />
+    <Compile Include="DiagnosticAnalyzers\InterpolationDiagnosticAnalyzer.cs" />
+    <Compile Include="DiagnosticAnalyzers\FormatSummaryOnMultipleLinesDiagnosticAnalyzer.cs" />
+    <Compile Include="DiagnosticAnalyzers\FormatSummaryOnSingleLineDiagnosticAnalyzer.cs" />
+    <Compile Include="Refactorings\FormatSummary\FormatSummaryOnMultipleLinesRefactoring.cs" />
+    <Compile Include="Refactorings\FormatSummary\FormatSummaryOnSingleLineRefactoring.cs" />
+    <Compile Include="Refactorings\FormatSummary\FormatSummaryRefactoring.cs" />
+    <Compile Include="CodeFixProviders\SingleLineDocumentationCommentTriviaCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\StatementCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\RegionDirectiveTriviaCodeFixProvider.cs" />
+    <Compile Include="Refactorings\RemoveUnnecessaryCaseLabelRefactoring.cs" />
+    <Compile Include="Refactorings\RenamePrivateFieldAccordingToCamelCaseWithUnderscoreRefactoring.cs" />
+    <Compile Include="Refactorings\ReorderModifiersRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceConditionalExpressionWithCoalesceExpressionRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceCountMethod\ReplaceCountMethodRefactoring.cs" />
+    <Compile Include="Refactorings\ReplacePropertyWithAutoImplementedPropertyRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceSelectWithCastRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceWhereAndCastWithOfTypeRefactoring.cs" />
+    <Compile Include="Refactorings\SimplifyLambdaExpressionParameterListRefactoring.cs" />
+    <Compile Include="Refactorings\SimplifyLogicalNotExpressionRefactoring.cs" />
+    <Compile Include="Refactorings\SimplifyNestedUsingStatementRefactoring.cs" />
+    <Compile Include="Refactorings\SimplifyNullableOfTRefactoring.cs" />
+    <Compile Include="Refactorings\ThrowingOfNewNotImplementedExceptionRefactoring.cs" />
+    <Compile Include="Refactorings\UseCarriageReturnAndLinefeedAsNewLineRefactoring.cs" />
+    <Compile Include="Refactorings\UseExplicitTypeInsteadOfVarRefactoring.cs" />
+    <Compile Include="Refactorings\UseLinefeedAsNewLineRefactoring.cs" />
+    <Compile Include="Refactorings\UseNameOfOperatorRefactoring.cs" />
+    <Compile Include="Refactorings\UsePredefinedTypeRefactoring.cs" />
+    <Compile Include="Refactorings\UseStringIsNullOrEmptyMethodRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceIfStatementWithAssignmentRefactoring.cs" />
+    <Compile Include="Refactorings\SimplifyConditionalExpressionRefactoring.cs" />
+    <Compile Include="Refactorings\UseCSharp6DictionaryInitializerRefactoring.cs" />
+    <Compile Include="Refactorings\SwapExpressionsInBinaryExpressionRefactoring.cs" />
+    <Compile Include="DiagnosticAnalyzers\ComplexElementInitializerDiagnosticAnalyzer.cs" />
+    <Compile Include="DiagnosticAnalyzers\RegionDirectiveTriviaDiagnosticAnalyzer.cs" />
+    <Compile Include="Refactorings\MarkClassAsStaticRefactoring.cs" />
     <Compile Include="Refactorings\UsePostfixUnaryOperatorInsteadOfAssignmentRefactoring.cs" />
-    <Compile Include="Analyzers\SimplifyIfStatementToReturnStatementAnalyzer.cs" />
+    <Compile Include="Refactorings\ReplaceIfStatementWithReturnStatementRefactoring.cs" />
     <Compile Include="CodeFixProviders\AddEmptyLineBetweenDeclarationsCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\ArgumentListCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\AvoidEmbeddedStatementCodeFixProvider.cs" />
@@ -69,11 +165,10 @@
     <Compile Include="DiagnosticAnalyzers\AssignmentExpressionDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\UseCarriageReturnAndLinefeedAsNewLineDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\UseLinefeedAsNewLineDiagnosticAnalyzer.cs" />
-    <Compile Include="Extensions\CodeFixContextExtensions.cs" />
     <Compile Include="Refactorings\SimplifyLinqMethodChainRefactoring.cs" />
     <Compile Include="Refactorings\ReplaceAnyMethodWithCountOrLengthPropertyRefactoring.cs" />
-    <Compile Include="Refactorings\ReplaceCountMethodWithAnyMethodRefactoring.cs" />
-    <Compile Include="Refactorings\ReplaceCountMethodWithCountOrLengthPropertyRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceCountMethod\ReplaceCountMethodWithAnyMethodRefactoring.cs" />
+    <Compile Include="Refactorings\ReplaceCountMethod\ReplaceCountMethodWithCountOrLengthPropertyRefactoring.cs" />
     <Compile Include="CodeFixProviders\ConstructorDeclarationCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\DoStatementCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\VariableDeclarationCodeFixProvider.cs" />
@@ -107,10 +202,10 @@
     <Compile Include="CodeFixProviders\FormatEmptyBlockCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\ImplicitArrayCreationExpressionCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\ParenthesizedLambdaExpressionCodeFixProvider.cs" />
-    <Compile Include="CodeFixProviders\RemoveEmptyObjectInitializerCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\RemoveEmptyInitializerCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\RemoveRedundantBracesCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\RemoveRedundantParenthesesCodeFixProvider.cs" />
-    <Compile Include="CodeFixProviders\RemoveRedundantPartialModifierCodeFixProvider.cs" />
+    <Compile Include="CodeFixProviders\RemovePartialModifierFromTypeWithSinglePartCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\RemoveRedundantSealedModifierCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\RemoveTriviaCodeFixProvider.cs" />
     <Compile Include="CodeFixProviders\FormatEachStatementOnSeparateLineCodeFixProvider.cs" />
@@ -145,12 +240,8 @@
     <Compile Include="DiagnosticAnalyzers\UsingDirectiveDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\WhileStatementDiagnosticAnalyzer.cs" />
     <Compile Include="Extensions\DiagnosticDescriptorExtensions.cs" />
-    <Compile Include="IfElseChainAnalysisResult.cs" />
     <Compile Include="Refactorings\AddBracesRefactoring.cs" />
     <Compile Include="Refactorings\ReplaceDoStatementWithWhileStatementRefactoring.cs" />
-    <Compile Include="Refactorings\FormatStatementOnNextLineRefactoring.cs" />
-    <Compile Include="Refactorings\ExpandExpressionBodiedMemberRefactoring.cs" />
-    <Compile Include="Refactorings\RemoveBracesFromUsingStatementRefactoring.cs" />
     <Compile Include="Refactorings\RemoveModifierRefactoring.cs" />
     <Compile Include="Refactorings\RemoveRedundantBooleanLiteralRefactoring.cs" />
     <Compile Include="DiagnosticAnalyzers\AccessorListDiagnosticAnalyzer.cs" />
@@ -164,7 +255,6 @@
     <Compile Include="DiagnosticAnalyzers\GenericNameDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\InitializerDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\RemoveRedundantSealedModifierDiagnosticAnalyzer.cs" />
-    <Compile Include="DiagnosticAnalyzers\RemoveRedundantBracesDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\EmptyStatementDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\EnumDeclarationDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\ImplicitArrayCreationExpressionDiagnosticAnalyzer.cs" />
@@ -201,12 +291,13 @@
     <Compile Include="Extensions\SyntaxNodeAnalysisContextExtensions.cs" />
     <Compile Include="Refactorings\SimplifyBooleanComparisonRefactoring.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Refactorings\WrapConditionalExpressionConditionInParenthesesRefactoring.cs" />
     <Compile Include="Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="DiagnosticAnalyzers\BlockThatCanBeEmbeddedStatementDiagnosticAnalyzer.cs" />
+    <Compile Include="DiagnosticAnalyzers\RemoveBracesDiagnosticAnalyzer.cs" />
     <Compile Include="CodeFixProviders\RemoveBracesCodeFixProvider.cs" />
     <Compile Include="DiagnosticAnalyzers\ForEachStatementDiagnosticAnalyzer.cs" />
     <Compile Include="DiagnosticAnalyzers\VariableDeclarationDiagnosticAnalyzer.cs" />
@@ -297,8 +388,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Analyzer Include="..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
-    <Analyzer Include="..\..\packages\CSharpAnalyzers.1.0.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
+    <Analyzer Include="..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.CSharp.Analyzers.dll" />
+    <Analyzer Include="..\..\packages\CSharpAnalyzers.1.1.0\analyzers\dotnet\cs\Roslynator.Utilities.dll" />
     <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.Analyzers.dll" />
     <Analyzer Include="..\..\packages\Microsoft.CodeAnalysis.Analyzers.1.0.0\analyzers\dotnet\cs\Microsoft.CodeAnalysis.CSharp.Analyzers.dll" />
   </ItemGroup>

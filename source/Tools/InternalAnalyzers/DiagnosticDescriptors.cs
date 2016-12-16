@@ -2,7 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Internal
+namespace Roslynator.CSharp.Internal
 {
     public static class DiagnosticDescriptors
     {
@@ -46,6 +46,15 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Internal
              id: DiagnosticIdentifiers.AddCodeRefactoringProviderSuffix,
              title: "Add suffix 'CodeRefactoringProvider' to class name.",
              messageFormat: "Consider adding suffix 'CodeRefactoringProvider' to class name.",
+             category: DiagnosticCategories.General,
+             defaultSeverity: DiagnosticSeverity.Warning,
+             isEnabledByDefault: true
+         );
+
+        public static readonly DiagnosticDescriptor SimplifyGetTypeInfoInvocation = new DiagnosticDescriptor(
+             id: DiagnosticIdentifiers.SimplifyGetTypeInfoInvocation,
+             title: "Simplify 'GetTypeInfo' method invocation'.",
+             messageFormat: "Consider simplifying 'GetTypeInfo' method invocation.",
              category: DiagnosticCategories.General,
              defaultSeverity: DiagnosticSeverity.Warning,
              isEnabledByDefault: true

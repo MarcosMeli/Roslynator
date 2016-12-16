@@ -1,12 +1,13 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class IndexerDeclarationRefactoring
     {
-        public static void ComputeRefactorings(RefactoringContext context, IndexerDeclarationSyntax indexerDeclaration)
+        public static async Task ComputeRefactoringsAsync(RefactoringContext context, IndexerDeclarationSyntax indexerDeclaration)
         {
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.UseExpressionBodiedMember)
                 && indexerDeclaration.AccessorList?.Span.Contains(context.Span) == true
@@ -18,6 +19,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     cancellationToken => UseExpressionBodiedMemberRefactoring.RefactorAsync(context.Document, indexerDeclaration, cancellationToken));
             }
 
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MarkContainingClassAsAbstract)
+                && indexerDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                MarkContainingClassAsAbstractRefactoring.ComputeRefactoring(context, indexerDeclaration);
+            }
+
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.MakeMemberAbstract)
                 && indexerDeclaration.HeaderSpan().Contains(context.Span)
                 && MakeMemberAbstractRefactoring.CanRefactor(indexerDeclaration))
@@ -25,6 +32,18 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 context.RegisterRefactoring(
                     "Make indexer abstract",
                     cancellationToken => MakeMemberAbstractRefactoring.RefactorAsync(context.Document, indexerDeclaration, cancellationToken));
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.MakeMemberVirtual)
+                && indexerDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                MakeMemberVirtualRefactoring.ComputeRefactoring(context, indexerDeclaration);
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CopyDocumentationCommentFromBaseMember)
+                && indexerDeclaration.HeaderSpan().Contains(context.Span))
+            {
+                await CopyDocumentationCommentFromBaseMemberRefactoring.ComputeRefactoringAsync(context, indexerDeclaration).ConfigureAwait(false);
             }
         }
     }

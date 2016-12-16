@@ -3,9 +3,9 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.WrapStatements
+namespace Roslynator.CSharp.Refactorings.WrapStatements
 {
     internal class WrapInTryCatchRefactoring : WrapStatementsRefactoring<TryStatementSyntax>
     {
@@ -15,7 +15,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.WrapStatements
                 Block(statements),
                 CatchClause(
                     CatchDeclaration(
-                        ParseName("System.Exception").WithSimplifierAnnotation(),
+                        ParseName(MetadataNames.System_Exception).WithSimplifierAnnotation(),
                         Identifier("ex")),
                     null,
                     Block()));

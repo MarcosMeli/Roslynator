@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using static Pihrtsoft.CodeAnalysis.CSharp.CSharpFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceWhileStatementWithDoStatementRefactoring
     {
@@ -17,8 +17,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             WhileStatementSyntax whileStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             DoStatementSyntax doStatement = DoStatement(
                 Token(
                     whileStatement.WhileKeyword.LeadingTrivia,
@@ -35,9 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithTriviaFrom(whileStatement)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(whileStatement, doStatement);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(whileStatement, doStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

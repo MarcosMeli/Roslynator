@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Rename;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class SymbolRenamer
     {
@@ -16,11 +16,14 @@ namespace Pihrtsoft.CodeAnalysis
             string newName,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
             if (symbol == null)
                 throw new ArgumentNullException(nameof(symbol));
 
-            if (document == null)
-                throw new ArgumentNullException(nameof(document));
+            if (newName == null)
+                throw new ArgumentNullException(nameof(newName));
 
             Solution solution = document.Project.Solution;
 

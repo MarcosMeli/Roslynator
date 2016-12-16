@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     public static class RemoveBracesFromIfElseElseRefactoring
     {
@@ -23,14 +22,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (ifStatement == null)
                 throw new ArgumentNullException(nameof(ifStatement));
 
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             IfStatementSyntax newNode = SyntaxRewriter.VisitNode(ifStatement)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(ifStatement, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(ifStatement, newNode, cancellationToken).ConfigureAwait(false);
         }
 
         private class SyntaxRewriter : CSharpSyntaxRewriter
@@ -52,7 +47,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     throw new ArgumentNullException(nameof(node));
 
                 if (_previousIf == null
-                    || _previousIf.Equals(IfElseChainAnalysis.GetPreviousIf(node)))
+                    || _previousIf.Equals(IfElseChain.GetPreviousIf(node)))
                 {
                     if (node.Statement != null
                         && node.Statement.IsKind(SyntaxKind.Block))

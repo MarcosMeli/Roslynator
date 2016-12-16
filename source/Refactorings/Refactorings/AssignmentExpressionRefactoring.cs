@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AssignmentExpressionRefactoring
     {
@@ -26,27 +26,37 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     });
             }
 
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.AddCastExpression)
-                && assignmentExpression.IsKind(SyntaxKind.SimpleAssignmentExpression)
-                && assignmentExpression.Left?.IsMissing == false
-                && assignmentExpression.Right?.IsMissing == false
-                && assignmentExpression.Right.Span.Contains(context.Span)
-                && context.SupportsSemanticModel)
+            if (context.IsAnyRefactoringEnabled(RefactoringIdentifiers.AddCastExpression, RefactoringIdentifiers.CallToMethod)
+                && assignmentExpression.IsKind(SyntaxKind.SimpleAssignmentExpression))
             {
-                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                ExpressionSyntax left = assignmentExpression.Left;
+                ExpressionSyntax right = assignmentExpression.Right;
 
-                ITypeSymbol leftSymbol = semanticModel.GetTypeInfo(assignmentExpression.Left).Type;
-
-                if (leftSymbol?.IsErrorType() == false)
+                if (left?.IsMissing == false
+                    && right?.IsMissing == false
+                    && right.Span.Contains(context.Span))
                 {
-                    ITypeSymbol rightSymbol = semanticModel.GetTypeInfo(assignmentExpression.Right).Type;
+                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                    if (rightSymbol?.IsErrorType() == false
-                        && !leftSymbol.Equals(rightSymbol))
+                    ITypeSymbol leftSymbol = semanticModel.GetTypeSymbol(left, context.CancellationToken);
+
+                    if (leftSymbol?.IsErrorType() == false)
                     {
-                        AddCastExpressionRefactoring.RegisterRefactoring(context, assignmentExpression.Right, leftSymbol, semanticModel);
+                        ITypeSymbol rightSymbol = semanticModel.GetTypeSymbol(right, context.CancellationToken);
+
+                        if (rightSymbol?.IsErrorType() == false
+                            && !leftSymbol.Equals(rightSymbol))
+                        {
+                            ModifyExpressionRefactoring.ComputeRefactoring(context, right, leftSymbol, semanticModel);
+                        }
                     }
                 }
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceMethodGroupWithLambda)
+                && context.SupportsSemanticModel)
+            {
+                await ReplaceMethodGroupWithLambdaRefactoring.ComputeRefactoringAsync(context, assignmentExpression).ConfigureAwait(false);
             }
         }
     }

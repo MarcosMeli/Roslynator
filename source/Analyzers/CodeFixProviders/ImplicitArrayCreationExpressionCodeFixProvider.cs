@@ -2,16 +2,15 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ImplicitArrayCreationExpressionCodeFixProvider))]
     [Shared]
@@ -30,58 +29,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                 .FindNode(context.Span, getInnermostNodeForTie: true)?
                 .FirstAncestorOrSelf<ImplicitArrayCreationExpressionSyntax>();
 
-            if (expression != null
-                && context.Document.SupportsSemanticModel)
-            {
-                SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
+            if (expression == null)
+                return;
 
-                var typeSymbol = semanticModel
-                    .GetTypeInfo(expression, context.CancellationToken)
-                    .Type as IArrayTypeSymbol;
+            SemanticModel semanticModel = await context.Document.GetSemanticModelAsync(context.CancellationToken).ConfigureAwait(false);
 
-                if (typeSymbol?.ElementType?.IsErrorType() == false)
-                {
-                    var arrayType = TypeSyntaxRefactoring.CreateTypeSyntax(typeSymbol) as ArrayTypeSyntax;
+            var typeSymbol = semanticModel
+                .GetTypeInfo(expression, context.CancellationToken)
+                .Type as IArrayTypeSymbol;
 
-                    if (arrayType != null)
-                    {
-                        CodeAction codeAction = CodeAction.Create(
-                            $"Declare explicit type '{typeSymbol.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}'",
-                            cancellationToken => RefactorAsync(context.Document, expression, arrayType, cancellationToken),
-                            DiagnosticIdentifiers.AvoidImplicitlyTypedArray + EquivalenceKeySuffix);
+            CodeAction codeAction = CodeAction.Create(
+                $"Declare explicit type '{typeSymbol.ToMinimalDisplayString(semanticModel, expression.Span.Start, DefaultSymbolDisplayFormat.Value)}'",
+                cancellationToken => AvoidImplicitlyTypedArrayRefactoring.RefactorAsync(context.Document, expression, cancellationToken),
+                DiagnosticIdentifiers.AvoidImplicitlyTypedArray + EquivalenceKeySuffix);
 
-                        context.RegisterCodeFix(codeAction, context.Diagnostics);
-                    }
-                }
-            }
-        }
-
-        private static async Task<Document> RefactorAsync(
-            Document document,
-            ImplicitArrayCreationExpressionSyntax node,
-            ArrayTypeSyntax arrayType,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            ArrayCreationExpressionSyntax newNode = CreateArrayCreationExpression(node, arrayType)
-                .WithFormatterAnnotation();
-
-            SyntaxNode newRoot = root.ReplaceNode(node, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static ArrayCreationExpressionSyntax CreateArrayCreationExpression(
-            ImplicitArrayCreationExpressionSyntax node,
-            ArrayTypeSyntax arrayType)
-        {
-            return SyntaxFactory.ArrayCreationExpression(
-                node.NewKeyword,
-                arrayType
-                    .WithSimplifierAnnotation()
-                    .WithTrailingTrivia(node.CloseBracketToken.TrailingTrivia),
-                node.Initializer);
+            context.RegisterCodeFix(codeAction, context.Diagnostics);
         }
     }
 }

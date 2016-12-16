@@ -2,7 +2,7 @@
 
 using Microsoft.CodeAnalysis;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class FileLinePositionSpanExtensions
     {
@@ -24,6 +24,11 @@ namespace Pihrtsoft.CodeAnalysis
         public static bool IsSingleLine(this FileLinePositionSpan fileLinePositionSpan)
         {
             return !fileLinePositionSpan.IsMultiLine();
+        }
+
+        public static int GetLineCount(this FileLinePositionSpan fileLinePositionSpan)
+        {
+            return fileLinePositionSpan.EndLine() - fileLinePositionSpan.StartLine() + 1;
         }
     }
 }

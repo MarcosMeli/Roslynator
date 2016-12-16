@@ -2,22 +2,28 @@
 
 using System.Collections.Immutable;
 using System.Composition;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(IfStatementCodeFixProvider))]
     [Shared]
     public class IfStatementCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.MergeIfStatementWithNestedIfStatement);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticIdentifiers.MergeIfStatementWithNestedIfStatement,
+                    DiagnosticIdentifiers.ReplaceIfStatementWithAssignment);
+            }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -30,111 +36,43 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             if (ifStatement == null)
                 return;
 
-            CodeAction codeAction = CodeAction.Create(
-                "Merge if with nested if",
-                cancellationToken =>
-                {
-                    return MergeIfStatementWithNestedIfStatementAsync(
-                        context.Document,
-                        ifStatement,
-                        cancellationToken);
-                },
-                DiagnosticIdentifiers.MergeIfStatementWithNestedIfStatement + EquivalenceKeySuffix);
-
-            context.RegisterCodeFix(codeAction, context.Diagnostics);
-        }
-
-        private static async Task<Document> MergeIfStatementWithNestedIfStatementAsync(
-            Document document,
-            IfStatementSyntax ifStatement,
-            CancellationToken cancellationToken = default(CancellationToken))
-        {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            IfStatementSyntax nestedIf = GetNestedIfStatement(ifStatement);
-
-            BinaryExpressionSyntax newCondition = SyntaxFactory.BinaryExpression(
-                SyntaxKind.LogicalAndExpression,
-                AddParenthesesIfNecessary(ifStatement.Condition),
-                AddParenthesesIfNecessary(nestedIf.Condition));
-
-            IfStatementSyntax newNode = GetNewIfStatement(ifStatement, nestedIf)
-                .WithCondition(newCondition)
-                .WithFormatterAnnotation();
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(ifStatement, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
-        }
-
-        private static IfStatementSyntax GetNewIfStatement(IfStatementSyntax ifStatement, IfStatementSyntax ifStatement2)
-        {
-            if (ifStatement.Statement.IsKind(SyntaxKind.Block))
+            foreach (Diagnostic diagnostic in context.Diagnostics)
             {
-                if (ifStatement2.Statement.IsKind(SyntaxKind.Block))
+                switch (diagnostic.Id)
                 {
-                    return ifStatement.ReplaceNode(ifStatement2, ((BlockSyntax)ifStatement2.Statement).Statements);
+                    case DiagnosticIdentifiers.MergeIfStatementWithNestedIfStatement:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Merge if with nested if",
+                                cancellationToken =>
+                                {
+                                    return MergeIfStatementWithNestedIfStatementRefactoring.RefactorAsync(
+                                        context.Document,
+                                        ifStatement,
+                                        cancellationToken);
+                                },
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.ReplaceIfStatementWithAssignment:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Replace if with assignment",
+                                cancellationToken =>
+                                {
+                                    return ReplaceIfStatementWithAssignmentRefactoring.RefactorAsync(
+                                        context.Document,
+                                        ifStatement,
+                                        cancellationToken);
+                                },
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
                 }
-                else
-                {
-                    return ifStatement.ReplaceNode(ifStatement2, ifStatement2.Statement);
-                }
-            }
-            else
-            {
-                return ifStatement.ReplaceNode(ifStatement.Statement, ifStatement2.Statement);
-            }
-        }
-
-        private static IfStatementSyntax GetNestedIfStatement(IfStatementSyntax ifStatement)
-        {
-            switch (ifStatement.Statement.Kind())
-            {
-                case SyntaxKind.Block:
-                    return (IfStatementSyntax)((BlockSyntax)ifStatement.Statement).Statements[0];
-                default:
-                    return (IfStatementSyntax)ifStatement.Statement;
-            }
-        }
-
-        private static ExpressionSyntax AddParenthesesIfNecessary(ExpressionSyntax expression)
-        {
-            switch (expression.Kind())
-            {
-                case SyntaxKind.ParenthesizedExpression:
-                case SyntaxKind.TrueLiteralExpression:
-                case SyntaxKind.FalseLiteralExpression:
-                case SyntaxKind.IdentifierName:
-                case SyntaxKind.InvocationExpression:
-                case SyntaxKind.SimpleMemberAccessExpression:
-                case SyntaxKind.ElementAccessExpression:
-                case SyntaxKind.LogicalNotExpression:
-                case SyntaxKind.CastExpression:
-                case SyntaxKind.MultiplyExpression:
-                case SyntaxKind.DivideExpression:
-                case SyntaxKind.ModuloExpression:
-                case SyntaxKind.AddExpression:
-                case SyntaxKind.SubtractExpression:
-                case SyntaxKind.LeftShiftExpression:
-                case SyntaxKind.RightShiftExpression:
-                case SyntaxKind.LessThanExpression:
-                case SyntaxKind.GreaterThanExpression:
-                case SyntaxKind.LessThanOrEqualExpression:
-                case SyntaxKind.GreaterThanOrEqualExpression:
-                case SyntaxKind.IsExpression:
-                case SyntaxKind.AsExpression:
-                case SyntaxKind.EqualsExpression:
-                case SyntaxKind.NotEqualsExpression:
-                case SyntaxKind.BitwiseAndExpression:
-                case SyntaxKind.BitwiseOrExpression:
-                case SyntaxKind.ExclusiveOrExpression:
-                case SyntaxKind.LogicalAndExpression:
-                    return expression;
-                default:
-                    {
-                        return SyntaxFactory.ParenthesizedExpression(expression.WithoutTrivia())
-                           .WithTriviaFrom(expression);
-                    }
             }
         }
     }

@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class CollapseToInitializerRefactoring
     {
@@ -106,12 +106,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         var memberAccess = (MemberAccessExpressionSyntax)assignment.Left;
 
                         ISymbol expressionSymbol = semanticModel
-                            .GetSymbolInfo(memberAccess.Expression, cancellationToken)
-                            .Symbol;
+                            .GetSymbol(memberAccess.Expression, cancellationToken);
 
                         if (symbol.Equals(expressionSymbol))
                         {
-                            ISymbol leftSymbol = semanticModel.GetSymbolInfo(assignment.Left, cancellationToken).Symbol;
+                            ISymbol leftSymbol = semanticModel.GetSymbol(assignment.Left, cancellationToken);
 
                             if (leftSymbol?.IsProperty() == true)
                                 return true;
@@ -129,8 +128,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             SelectedStatementsInfo info,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             StatementContainer container = info.Container;
 
             ExpressionStatementSyntax[] expressionStatements = info
@@ -156,11 +153,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 count--;
             }
 
-            SyntaxNode newRoot = root.ReplaceNode(
+            return await document.ReplaceNodeAsync(
                 container.Node,
-                container.NodeWithStatements(newStatements));
-
-            return document.WithSyntaxRoot(newRoot);
+                container.NodeWithStatements(newStatements),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static InitializerExpressionSyntax CreateInitializer(ObjectCreationExpressionSyntax objectCreation, ExpressionStatementSyntax[] expressionStatements)

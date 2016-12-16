@@ -2,14 +2,13 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analyzers;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class SwitchSectionDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -22,7 +21,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
                     DiagnosticDescriptors.FormatSwitchSectionStatementOnSeparateLine,
                     DiagnosticDescriptors.FormatEachStatementOnSeparateLine,
                     DiagnosticDescriptors.RemoveRedundantDefaultSwitchSection,
-                    DiagnosticDescriptors.RemoveUnnecessaryCaseLabel);
+                    DiagnosticDescriptors.RemoveUnnecessaryCaseLabel,
+                    DiagnosticDescriptors.DefaultLabelShouldBeLastLabelInSwitchSection,
+                    DiagnosticDescriptors.AddBracesToSwitchSectionWithMultipleStatements);
             }
         }
 
@@ -41,96 +42,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var switchSection = (SwitchSectionSyntax)context.Node;
 
-            FormatEachStatementOnSeparateLineAnalyzer.AnalyzeStatements(context, switchSection.Statements);
+            FormatEachStatementOnSeparateLineRefactoring.Analyze(context, switchSection);
 
-            if (switchSection.Parent?.IsKind(SyntaxKind.SwitchStatement) == true)
-            {
-                AnalyzeRedundantDefaultSwitchSection(context, switchSection);
-                AnalyzeUnnecessaryCaseLabel(context, switchSection);
-            }
+            RemoveRedundantDefaultSwitchSectionRefactoring.Analyze(context, switchSection);
 
-            AnalyzeFirstStatement(context, switchSection);
-        }
+            RemoveUnnecessaryCaseLabelRefactoring.Analyze(context, switchSection);
 
-        private static void AnalyzeRedundantDefaultSwitchSection(SyntaxNodeAnalysisContext context, SwitchSectionSyntax switchSection)
-        {
-            if (switchSection.Labels.Any(SyntaxKind.DefaultSwitchLabel)
-                && ContainsOnlyBreakStatement(switchSection)
-                && switchSection
-                    .DescendantTrivia(switchSection.Span)
-                    .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
+            FormatSwitchSectionStatementOnSeparateLineRefactoring.Analyze(context, switchSection);
+
+            DefaultLabelShouldBeLastLabelInSwitchSectionRefactoring.Analyze(context, switchSection);
+
+            if (switchSection.Statements.Count > 1)
             {
                 context.ReportDiagnostic(
-                    DiagnosticDescriptors.RemoveRedundantDefaultSwitchSection,
-                    switchSection.GetLocation());
-            }
-        }
-
-        private static bool ContainsOnlyBreakStatement(SwitchSectionSyntax switchSection)
-        {
-            if (switchSection.Statements.Count == 1)
-            {
-                StatementSyntax statement = switchSection.Statements[0];
-
-                switch (statement.Kind())
-                {
-                    case SyntaxKind.Block:
-                        {
-                            var block = (BlockSyntax)statement;
-
-                            if (block.Statements.Count == 1
-                                && block.Statements[0].IsKind(SyntaxKind.BreakStatement))
-                            {
-                                return true;
-                            }
-
-                            break;
-                        }
-                    case SyntaxKind.BreakStatement:
-                        {
-                            return true;
-                        }
-                }
-            }
-
-            return false;
-        }
-
-        private static void AnalyzeUnnecessaryCaseLabel(SyntaxNodeAnalysisContext context, SwitchSectionSyntax switchSection)
-        {
-            if (switchSection.Labels.Count > 1
-                && switchSection.Labels.Any(SyntaxKind.DefaultSwitchLabel))
-            {
-                foreach (SwitchLabelSyntax label in switchSection.Labels)
-                {
-                    if (!label.IsKind(SyntaxKind.DefaultSwitchLabel)
-                        && label
-                            .DescendantTrivia(label.Span)
-                            .All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.RemoveUnnecessaryCaseLabel,
-                            label.GetLocation());
-                    }
-                }
-            }
-        }
-
-        private static void AnalyzeFirstStatement(SyntaxNodeAnalysisContext context, SwitchSectionSyntax switchSection)
-        {
-            SyntaxList<StatementSyntax> statements = switchSection.Statements;
-
-            if (statements.Count == 0)
-                return;
-
-            if (switchSection.Labels.Count == 0)
-                return;
-
-            if (switchSection.Labels.Last().GetSpanEndLine() == statements[0].GetSpanStartLine())
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.FormatSwitchSectionStatementOnSeparateLine,
-                    statements[0].GetLocation());
+                    DiagnosticDescriptors.AddBracesToSwitchSectionWithMultipleStatements,
+                    Location.Create(switchSection.SyntaxTree, switchSection.Statements.Span));
             }
         }
     }

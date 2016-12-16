@@ -5,16 +5,14 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ChangeVariableDeclarationTypeRefactoring
     {
         public static async Task ComputeRefactoringsAsync(RefactoringContext context, VariableDeclarationSyntax variableDeclaration)
         {
-            if (context.SupportsSemanticModel
-                && variableDeclaration.Type?.Span.Contains(context.Span) == true)
+            if (variableDeclaration.Type?.Span.Contains(context.Span) == true)
             {
                 if (context.IsRefactoringEnabled(RefactoringIdentifiers.ChangeTypeAccordingToExpression))
                     await ChangeTypeAccordingToExpressionAsync(context, variableDeclaration).ConfigureAwait(false);
@@ -32,24 +30,28 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             RefactoringContext context,
             VariableDeclarationSyntax variableDeclaration)
         {
-            if (variableDeclaration.Type?.IsVar == false
-                && variableDeclaration.Variables.Count == 1)
+            TypeSyntax type = variableDeclaration.Type;
+
+            if (type?.IsVar == false)
             {
-                ExpressionSyntax initializerValue = variableDeclaration.Variables[0].Initializer?.Value;
+                SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
 
-                if (initializerValue != null)
+                if (variables.Count == 1)
                 {
-                    SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+                    ExpressionSyntax initializerValue = variables[0].Initializer?.Value;
 
-                    ITypeSymbol initializerTypeSymbol = semanticModel.GetTypeInfo(initializerValue).Type;
-
-                    if (initializerTypeSymbol?.IsErrorType() == false)
+                    if (initializerValue != null)
                     {
-                        ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(variableDeclaration.Type).ConvertedType;
+                        SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-                        if (!initializerTypeSymbol.Equals(typeSymbol))
+                        ITypeSymbol initializerTypeSymbol = semanticModel.GetTypeSymbol(initializerValue);
+
+                        if (initializerTypeSymbol?.IsErrorType() == false)
                         {
-                            ChangeType(context, variableDeclaration, initializerTypeSymbol, semanticModel, context.CancellationToken);
+                            ITypeSymbol typeSymbol = semanticModel.GetConvertedTypeSymbol(type);
+
+                            if (!initializerTypeSymbol.Equals(typeSymbol))
+                                ChangeType(context, variableDeclaration, initializerTypeSymbol, semanticModel, context.CancellationToken);
                         }
                     }
                 }
@@ -62,7 +64,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-            TypeAnalysisResult result = VariableDeclarationAnalysis.AnalyzeType(
+            TypeAnalysisResult result = TypeAnalyzer.AnalyzeType(
                 variableDeclaration,
                 semanticModel,
                 context.CancellationToken);
@@ -75,7 +77,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         "Change type to 'var'",
                         cancellationToken =>
                         {
-                            return TypeSyntaxRefactoring.ChangeTypeToVarAsync(
+                            return ChangeTypeRefactoring.ChangeTypeToVarAsync(
                                 context.Document,
                                 variableDeclaration.Type,
                                 cancellationToken);
@@ -104,40 +106,25 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
         {
             TypeSyntax type = variableDeclaration.Type;
 
-            if (variableDeclaration.Variables.Count == 1
-                && variableDeclaration.Variables[0].Initializer?.Value != null
-                && typeSymbol.IsNamedType())
+            SeparatedSyntaxList<VariableDeclaratorSyntax> variables = variableDeclaration.Variables;
+
+            if (variables.Count == 1
+                && variables[0].Initializer?.Value != null
+                && typeSymbol.IsConstructedFromTaskOfT(semanticModel)
+                && semanticModel
+                    .GetEnclosingSymbol(variableDeclaration.SpanStart, cancellationToken)?
+                    .IsAsyncMethod() == true)
             {
-                INamedTypeSymbol taskOfT = semanticModel.Compilation.GetTypeByMetadataName("System.Threading.Tasks.Task`1");
+                ITypeSymbol typeArgumentType = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
 
-                if (((INamedTypeSymbol)typeSymbol).ConstructedFrom.Equals(taskOfT)
-                    && AsyncAnalysis.IsPartOfAsyncBlock(variableDeclaration, semanticModel, cancellationToken))
-                {
-                    ITypeSymbol typeArgumentType = ((INamedTypeSymbol)typeSymbol).TypeArguments[0];
-
-                    context.RegisterRefactoring(
-                        $"Change type to '{typeArgumentType.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}' and insert 'await'",
-                        c =>
-                        {
-                            return ChangeTypeAndAddAwaitAsync(
-                                context.Document,
-                                variableDeclaration,
-                                typeArgumentType,
-                                c);
-                        });
-                }
+                context.RegisterRefactoring(
+                    $"Change type to '{typeArgumentType.ToMinimalDisplayString(semanticModel, type.SpanStart, DefaultSymbolDisplayFormat.Value)}' and insert 'await'",
+                    c => ChangeTypeAndAddAwaitAsync(context.Document, variableDeclaration, typeArgumentType, c));
             }
 
             context.RegisterRefactoring(
-                $"Change type to '{typeSymbol.ToDisplayString(TypeSyntaxRefactoring.SymbolDisplayFormat)}'",
-                c =>
-                {
-                    return TypeSyntaxRefactoring.ChangeTypeAsync(
-                        context.Document,
-                        type,
-                        typeSymbol,
-                        c);
-                });
+                $"Change type to '{typeSymbol.ToMinimalDisplayString(semanticModel, type.Span.Start, DefaultSymbolDisplayFormat.Value)}'",
+                c => ChangeTypeRefactoring.ChangeTypeAsync(context.Document, type, typeSymbol, c));
         }
 
         private static async Task<Document> ChangeTypeAndAddAwaitAsync(
@@ -146,24 +133,21 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ITypeSymbol typeSymbol,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            TypeSyntax type = variableDeclaration.Type;
 
-            ExpressionSyntax initializerValue = variableDeclaration.Variables[0].Initializer.Value;
+            ExpressionSyntax value = variableDeclaration.Variables[0].Initializer.Value;
 
-            AwaitExpressionSyntax newInitializerValue = SyntaxFactory.AwaitExpression(initializerValue)
-                .WithTriviaFrom(initializerValue);
+            AwaitExpressionSyntax newInitializerValue = SyntaxFactory.AwaitExpression(value)
+                .WithTriviaFrom(value);
 
-            VariableDeclarationSyntax newNode = variableDeclaration.ReplaceNode(initializerValue, newInitializerValue);
+            VariableDeclarationSyntax newNode = variableDeclaration.ReplaceNode(value, newInitializerValue);
 
-            newNode = newNode
-                .WithType(
-                    TypeSyntaxRefactoring.CreateTypeSyntax(typeSymbol)
-                        .WithTriviaFrom(variableDeclaration.Type)
-                        .WithSimplifierAnnotation());
+            SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(variableDeclaration, newNode);
+            newNode = newNode.WithType(
+                CSharpFactory.Type(typeSymbol, semanticModel, type.SpanStart).WithTriviaFrom(type));
 
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(variableDeclaration, newNode, cancellationToken).ConfigureAwait(false);
         }
     }
 }

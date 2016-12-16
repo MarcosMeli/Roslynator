@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceFieldWithConstantRefactoring
     {
@@ -25,8 +25,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 ITypeSymbol typeSymbol = semanticModel.GetTypeInfo(type, context.CancellationToken).Type;
 
                 return typeSymbol != null
-                    && typeSymbol.SpecialType != SpecialType.System_Object
-                    && typeSymbol.IsPredefinedType();
+                    && typeSymbol.CanBeConstantValue();
             }
 
             return false;
@@ -37,8 +36,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             FieldDeclarationSyntax node,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SyntaxTokenList modifiers = node.Modifiers;
 
             int index = modifiers.IndexOf(SyntaxKind.StaticKeyword);
@@ -56,9 +53,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                 .WithModifiers(modifiers)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(node, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(node, newNode, cancellationToken).ConfigureAwait(false);
         }
     }
 }

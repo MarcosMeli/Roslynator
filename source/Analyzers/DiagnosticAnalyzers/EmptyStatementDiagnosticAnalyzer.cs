@@ -5,15 +5,17 @@ using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class EmptyStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.RemoveEmptyStatement);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.RemoveEmptyStatement); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -28,17 +30,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            if (context.Node.Parent == null)
-                return;
+            SyntaxNode emptyStatement = context.Node;
 
-            if (EmbeddedStatementAnalysis.SupportsEmbeddedStatement(context.Node.Parent))
-                return;
-
-            Diagnostic diagnostic = Diagnostic.Create(
-                DiagnosticDescriptors.RemoveEmptyStatement,
-                context.Node.GetLocation());
-
-            context.ReportDiagnostic(diagnostic);
+            RemoveEmptyStatementRefactoring.Analyze(context, emptyStatement);
         }
     }
 }

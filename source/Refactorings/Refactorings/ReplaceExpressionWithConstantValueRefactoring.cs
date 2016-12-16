@@ -5,42 +5,33 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ReplaceExpressionWithConstantValueRefactoring
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ExpressionSyntax expression)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync();
+            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
 
-            ISymbol symbol = semanticModel.GetSymbolInfo(expression, context.CancellationToken).Symbol;
+            Optional<object> optional = semanticModel.GetConstantValue(expression, context.CancellationToken);
 
-            if (symbol?.IsErrorType() == false)
+            if (optional.HasValue)
             {
-                object constantValue = null;
-
-                if (symbol.TryGetConstantValue(out constantValue))
-                {
-                    ExpressionSyntax newExpression = SyntaxUtility.CreateExpressionFromConstantValue(constantValue);
-
-                    context.RegisterRefactoring(
-                        $"Replace '{expression}' with constant value",
-                        cancellationToken => RefactorAsync(context.Document, expression, newExpression, cancellationToken));
-                }
+                context.RegisterRefactoring(
+                    "Replace with constant value",
+                    cancellationToken => RefactorAsync(context.Document, expression, optional.Value, cancellationToken));
             }
         }
 
         private static async Task<Document> RefactorAsync(
             Document document,
             ExpressionSyntax expression,
-            ExpressionSyntax newExpression,
-            CancellationToken cancellationToken = default(CancellationToken))
+            object constantValue,
+            CancellationToken cancellationToken)
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
+            ExpressionSyntax newExpression = CSharpFactory.ConstantExpression(constantValue);
 
-            SyntaxNode newRoot = root.ReplaceNode(expression, newExpression.WithTriviaFrom(expression));
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(expression, newExpression.WithTriviaFrom(expression)).ConfigureAwait(false);
         }
     }
 }

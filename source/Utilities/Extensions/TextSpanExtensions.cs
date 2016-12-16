@@ -4,7 +4,7 @@ using System;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class TextSpanExtensions
     {
@@ -13,66 +13,102 @@ namespace Pihrtsoft.CodeAnalysis
             if (node == null)
                 throw new ArgumentNullException(nameof(node));
 
-            TextSpan nodeSpan = node.Span;
-            TextSpan nodeFullSpan = node.FullSpan;
-
-            return span.Start >= nodeFullSpan.Start
-                && span.Start <= nodeSpan.Start
-                && span.End >= nodeSpan.End
-                && span.End <= nodeFullSpan.End;
+            return span.IsBetweenSpans(node.Span, node.FullSpan);
         }
 
         public static bool IsBetweenSpans<TNode>(this TextSpan span, SyntaxList<TNode> list) where TNode : SyntaxNode
         {
-            TextSpan nodeSpan = list.Span;
-            TextSpan nodeFullSpan = list.FullSpan;
-
-            return span.Start >= nodeFullSpan.Start
-                && span.Start <= nodeSpan.Start
-                && span.End >= nodeSpan.End
-                && span.End <= nodeFullSpan.End;
+            return span.IsBetweenSpans(list.Span, list.FullSpan);
         }
 
         public static bool IsBetweenSpans<TNode>(this TextSpan span, SeparatedSyntaxList<TNode> list) where TNode : SyntaxNode
         {
-            TextSpan nodeSpan = list.Span;
-            TextSpan nodeFullSpan = list.FullSpan;
-
-            return span.Start >= nodeFullSpan.Start
-                && span.Start <= nodeSpan.Start
-                && span.End >= nodeSpan.End
-                && span.End <= nodeFullSpan.End;
+            return span.IsBetweenSpans(list.Span, list.FullSpan);
         }
 
         public static bool IsBetweenSpans(this TextSpan span, SyntaxToken token)
         {
-            TextSpan nodeSpan = token.Span;
-            TextSpan nodeFullSpan = token.FullSpan;
-
-            return span.Start >= nodeFullSpan.Start
-                && span.Start <= nodeSpan.Start
-                && span.End >= nodeSpan.End
-                && span.End <= nodeFullSpan.End;
+            return span.IsBetweenSpans(token.Span, token.FullSpan);
         }
 
-        public static bool IsEmptyOrBetweenSpans(this TextSpan span, SyntaxNode node)
+        private static bool IsBetweenSpans(this TextSpan span, TextSpan innerSpan, TextSpan outerSpan)
         {
-            return span.IsEmpty || IsBetweenSpans(span, node);
+            return span.Start >= outerSpan.Start
+                && span.Start <= innerSpan.Start
+                && span.End >= innerSpan.End
+                && span.End <= outerSpan.End;
         }
 
-        public static bool IsEmptyOrBetweenSpans<TNode>(this TextSpan span, SyntaxList<TNode> node) where TNode : SyntaxNode
+        public static bool IsContainedInSpanOrBetweenSpans(this TextSpan span, SyntaxNode node)
         {
-            return span.IsEmpty || IsBetweenSpans(span, node);
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            TextSpan innerSpan = node.Span;
+
+            return innerSpan.Contains(span) || span.IsBetweenSpans(innerSpan, node.FullSpan);
         }
 
-        public static bool IsEmptyOrBetweenSpans<TNode>(this TextSpan span, SeparatedSyntaxList<TNode> node) where TNode : SyntaxNode
+        public static bool IsContainedInSpanOrBetweenSpans<TNode>(this TextSpan span, SyntaxList<TNode> list) where TNode : SyntaxNode
         {
-            return span.IsEmpty || IsBetweenSpans(span, node);
+            TextSpan innerSpan = list.Span;
+
+            return innerSpan.Contains(span) || span.IsBetweenSpans(innerSpan, list.FullSpan);
         }
 
-        public static bool IsEmptyOrBetweenSpans(this TextSpan span, SyntaxToken token)
+        public static bool IsContainedInSpanOrBetweenSpans<TNode>(this TextSpan span, SeparatedSyntaxList<TNode> list) where TNode : SyntaxNode
         {
-            return span.IsEmpty || IsBetweenSpans(span, token);
+            TextSpan innerSpan = list.Span;
+
+            return innerSpan.Contains(span) || span.IsBetweenSpans(innerSpan, list.FullSpan);
+        }
+
+        public static bool IsContainedInSpanOrBetweenSpans(this TextSpan span, SyntaxToken token)
+        {
+            TextSpan innerSpan = token.Span;
+
+            return innerSpan.Contains(span) || span.IsBetweenSpans(innerSpan, token.FullSpan);
+        }
+
+        public static bool IsEmptyAndContainedInSpanOrBetweenSpans(this TextSpan span, SyntaxNode node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            return IsEmptyAndContainedInSpanOrBetweenSpans(span, node.Span, node.FullSpan);
+        }
+
+        public static bool IsEmptyAndContainedInSpanOrBetweenSpans<TNode>(this TextSpan span, SyntaxList<TNode> node) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            return IsEmptyAndContainedInSpanOrBetweenSpans(span, node.Span, node.FullSpan);
+        }
+
+        public static bool IsEmptyAndContainedInSpanOrBetweenSpans<TNode>(this TextSpan span, SeparatedSyntaxList<TNode> node) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            return IsEmptyAndContainedInSpanOrBetweenSpans(span, node.Span, node.FullSpan);
+        }
+
+        public static bool IsEmptyAndContainedInSpanOrBetweenSpans(this TextSpan span, SyntaxToken token)
+        {
+            return IsEmptyAndContainedInSpanOrBetweenSpans(span, token.Span, token.FullSpan);
+        }
+
+        private static bool IsEmptyAndContainedInSpanOrBetweenSpans(this TextSpan span, TextSpan innerSpan, TextSpan outerSpan)
+        {
+            if (span.IsEmpty)
+            {
+                return innerSpan.Contains(span);
+            }
+            else
+            {
+                return span.IsBetweenSpans(innerSpan, outerSpan);
+            }
         }
     }
 }

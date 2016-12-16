@@ -7,11 +7,12 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings.ReplaceCountMethod;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
-    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(AttributeArgumentListCodeFixProvider))]
+    [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(BinaryExpressionCodeFixProvider))]
     [Shared]
     public class BinaryExpressionCodeFixProvider : BaseCodeFixProvider
     {
@@ -20,9 +21,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             get
             {
                 return ImmutableArray.Create(
-                    DiagnosticIdentifiers.RemoveRedundantBooleanLiteral,
                     DiagnosticIdentifiers.SimplifyBooleanComparison,
-                    DiagnosticIdentifiers.ReplaceCountMethodWithAnyMethod);
+                    DiagnosticIdentifiers.ReplaceCountMethodWithAnyMethod,
+                    DiagnosticIdentifiers.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression,
+                    DiagnosticIdentifiers.UseStringIsNullOrEmptyMethod);
             }
         }
 
@@ -41,17 +43,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
             {
                 switch (diagnostic.Id)
                 {
-                    case DiagnosticIdentifiers.RemoveRedundantBooleanLiteral:
-                        {
-                            CodeAction codeAction = CodeAction.Create(
-                                "Remove redundant boolean literal",
-                                cancellationToken => RemoveRedundantBooleanLiteralRefactoring.RefactorAsync(context.Document, binaryExpression, cancellationToken),
-                                diagnostic.Id + EquivalenceKeySuffix);
-
-                            context.RegisterCodeFix(codeAction, diagnostic);
-
-                            break;
-                        }
                     case DiagnosticIdentifiers.SimplifyBooleanComparison:
                         {
                             CodeAction codeAction = CodeAction.Create(
@@ -65,7 +56,32 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
                         }
                     case DiagnosticIdentifiers.ReplaceCountMethodWithAnyMethod:
                         {
-                            ReplaceCountMethodWithAnyMethodRefactoring.RegisterCodeFix(context, diagnostic, binaryExpression);
+                            CodeAction codeAction = CodeAction.Create(
+                                "Replace 'Count()' with 'Any()'",
+                                cancellationToken => ReplaceCountMethodWithAnyMethodRefactoring.RefactorAsync(context.Document, binaryExpression, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                $"Swap '{binaryExpression.Left}' and '{binaryExpression.Right}'",
+                                cancellationToken => SwapExpressionsInBinaryExpressionRefactoring.RefactorAsync(context.Document, binaryExpression, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.UseStringIsNullOrEmptyMethod:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Use 'string.IsNullOrEmpty' method",
+                                cancellationToken => UseStringIsNullOrEmptyMethodRefactoring.RefactorAsync(context.Document, binaryExpression, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
                             break;
                         }
                 }

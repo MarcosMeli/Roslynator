@@ -6,15 +6,16 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class AvoidEmbeddedStatementDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.AvoidEmbeddedStatement);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.AvoidEmbeddedStatement); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -38,7 +39,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            StatementSyntax statement = EmbeddedStatementAnalysis.GetEmbeddedStatement(context.Node);
+            StatementSyntax statement = EmbeddedStatement.GetEmbeddedStatement(context.Node);
 
             if (statement != null)
             {

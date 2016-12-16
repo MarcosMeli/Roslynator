@@ -8,8 +8,8 @@
     <ProjectGuid>{E333B107-366A-43E9-BB9F-A29DD5E1F10D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Pihrtsoft.CodeAnalysis.CSharp.Analyzers.Tests</RootNamespace>
-    <AssemblyName>Pihrtsoft.CodeAnalysis.CSharp.Analyzers.Tests</AssemblyName>
+    <RootNamespace>Roslynator.CSharp.Analyzers.Tests</RootNamespace>
+    <AssemblyName>Roslynator.CSharp.Analyzers.Tests</AssemblyName>
     <DefaultLanguage>en-US</DefaultLanguage>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -36,11 +36,63 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddBraces.cs" />
+    <Compile Include="AddBracesToSwitchSectionWithMultipleStatements.cs" />
+    <Compile Include="AddEmptyLineAfterEmbeddedStatement.cs" />
+    <Compile Include="AddEmptyLineAfterLastStatementInDoStatement.cs" />
+    <Compile Include="AsynchronousMethodNameShouldEndWithAsync.cs" />
+    <Compile Include="AvoidUsageOfWhileStatementToCreateInfiniteLoop.cs" />
+    <Compile Include="CombineEnumerableWhereMethodChain.cs" />
+    <Compile Include="DeclareTypeInsideNamespace.cs" />
+    <Compile Include="AvoidUsageOfForStatementToCreateInfiniteLoop.cs" />
+    <Compile Include="AddStaticModifierToAllPartialClassDeclarations.cs" />
+    <Compile Include="DefaultSwitchLabelShouldBeLastLabelInSection.cs" />
+    <Compile Include="FormatEachStatementOnSeparateLine.cs" />
+    <Compile Include="FormatEmbeddedStatementOnSeparateLine.cs" />
+    <Compile Include="FormatEmptyBlock.cs" />
+    <Compile Include="FormatSwitchSectionStatementOnSeparateLine.cs" />
+    <Compile Include="MarkClassAsStatic.cs" />
+    <Compile Include="DeclareUsingDirectiveOnTopLevel.cs" />
+    <Compile Include="AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression.cs" />
+    <Compile Include="MergeIfStatementWithNestedIfStatement.cs" />
+    <Compile Include="MergeInterpolationIntoInterpolatedString.cs" />
+    <Compile Include="FormatDocumentationSummary\FormatDocumentationSummaryOnMultipleLines.cs" />
+    <Compile Include="FormatDocumentationSummary\FormatDocumentationSummaryOnSingleLine.cs" />
+    <Compile Include="MergeLocalDeclarationWithReturnStatement.cs" />
+    <Compile Include="RemoveEmptyDestructor.cs" />
+    <Compile Include="RemoveEmptyRegion.cs" />
+    <Compile Include="RemoveFileWithNoCode.cs" />
+    <Compile Include="RemoveRedundantBooleanLiteral.cs" />
+    <Compile Include="RemoveRedundantBraces.cs" />
+    <Compile Include="RemoveRedundantConstructor.cs" />
+    <Compile Include="RemoveRedundantDelegateCreation.cs" />
+    <Compile Include="RemoveRedundantEmptyLine.cs" />
+    <Compile Include="RemoveRedundantStringToCharArrayCall.cs" />
+    <Compile Include="RemoveRedundantToStringCall.cs" />
+    <Compile Include="RenamePrivateFieldAccordingToCamelCaseWithUnderscore.cs" />
+    <Compile Include="ReplaceAnyMethodWithCountOrLengthProperty.cs" />
+    <Compile Include="ReplaceCountMethodWithAnyMethod.cs" />
+    <Compile Include="ReplaceCountMethodWithCountOrLengthProperty.cs" />
+    <Compile Include="ReplaceIfStatementWithReturnStatement.cs" />
+    <Compile Include="UseCompoundAssignment.cs" />
+    <Compile Include="SimplifyBooleanComparison.cs" />
+    <Compile Include="SimplifyConditionalExpression.cs" />
+    <Compile Include="SimplifyNullableOfT.cs" />
+    <Compile Include="ThrowingOfNewNotImplementedException.cs" />
+    <Compile Include="UseAutoProperty.cs" />
+    <Compile Include="UseExpressionBodiedMember.cs" />
+    <Compile Include="UseStringIsNullOrEmptyMethod.cs" />
+    <Compile Include="SimplifyLinqMethodChain.cs" />
+    <Compile Include="UseCastMethodInsteadOfSelectMethod.cs" />
+    <Compile Include="ReplaceIfStatementWithAssignment.cs" />
+    <Compile Include="UseBitwiseOperationInsteadOfHasFlag.cs" />
     <Compile Include="ReplacePropertyWithAutoProperty.cs" />
+    <Compile Include="UseCSharp6DictionaryInitializer.cs" />
     <Compile Include="UsePostfixUnaryOperatorInsteadOfAssignment.cs" />
-    <Compile Include="AddConfigureAwait.cs" />
+    <Compile Include="CallConfigureAwait.cs" />
     <Compile Include="AvoidUsageOfUsingAliasDirective.cs" />
     <Compile Include="AvoidLockingOnPubliclyAccessibleInstance.cs" />
     <Compile Include="DeclareEachTypeInSeparateFile\DeclareEachTypeInSeparateFile.cs" />
@@ -53,6 +105,12 @@
     <Compile Include="FormatDeclarationBraces.cs" />
     <Compile Include="RemoveRedundantParentheses.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System.Collections.Immutable, Version=1.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.3.0\lib\portable-net45+win8+wp8+wpa81\System.Collections.Immutable.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

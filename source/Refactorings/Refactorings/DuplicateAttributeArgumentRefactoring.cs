@@ -5,22 +5,19 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class DuplicateAttributeArgumentRefactoring
     {
         public static void ComputeRefactoring(RefactoringContext context, AttributeArgumentListSyntax argumentList)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.DuplicateArgument))
-            {
-                AttributeArgumentSyntax argument = GetArgument(context, argumentList);
+            AttributeArgumentSyntax argument = GetArgument(context, argumentList);
 
-                if (argument != null)
-                {
-                    context.RegisterRefactoring(
-                        "Duplicate argument",
-                        cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
-                }
+            if (argument != null)
+            {
+                context.RegisterRefactoring(
+                    "Duplicate argument",
+                    cancellationToken => RefactorAsync(context.Document, argument, cancellationToken));
             }
         }
 
@@ -54,8 +51,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeArgumentSyntax argument,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var argumentList = (AttributeArgumentListSyntax)argument.Parent;
 
             int index = argumentList.Arguments.IndexOf(argument);
@@ -63,9 +58,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeArgumentSyntax previousArgument = argumentList.Arguments[index - 1]
                 .WithTriviaFrom(argument);
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(argument, previousArgument);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(argument, previousArgument, cancellationToken).ConfigureAwait(false);
         }
     }
 }

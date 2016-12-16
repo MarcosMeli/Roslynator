@@ -6,9 +6,8 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Analysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class StatementRefactoring
     {
@@ -23,7 +22,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
 
                 if (statement != null)
                 {
-                    if (!EmbeddedStatementAnalysis.IsEmbeddedStatement(statement)
+                    if (!EmbeddedStatement.IsEmbeddedStatement(statement)
                         && statement.Parent?.IsKind(SyntaxKind.Block) == true)
                     {
                         RegisterRefactoring(context, statement);
@@ -122,7 +121,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                     {
                         var ifStatement = (IfStatementSyntax)parent;
 
-                        if (IfElseChainAnalysis.IsTopmostIf(ifStatement)
+                        if (IfElseChain.IsTopmostIf(ifStatement)
                             && block.OpenBraceToken.Span.Contains(context.Span))
                         {
                             return ifStatement;
@@ -141,7 +140,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
                         var elseClause = (ElseClauseSyntax)parent;
 
                         if (block.CloseBraceToken.Span.Contains(context.Span))
-                            return IfElseChainAnalysis.GetTopmostIf(elseClause);
+                            return IfElseChain.GetTopmostIf(elseClause);
 
                         break;
                     }
@@ -181,16 +180,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             return null;
         }
 
-        private static async Task<Document> RemoveStatementAsync(
+        private static Task<Document> RemoveStatementAsync(
             Document document,
             StatementSyntax statement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            root = root.RemoveNode(statement, GetRemoveOptions(statement));
-
-            return document.WithSyntaxRoot(root);
+            return document.RemoveNodeAsync(statement, GetRemoveOptions(statement), cancellationToken);
         }
 
         private static async Task<Document> DuplicateStatementAsync(
@@ -198,8 +193,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             StatementSyntax statement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var block = (BlockSyntax)statement.Parent;
 
             int index = block.Statements.IndexOf(statement);
@@ -207,19 +200,17 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             if (index == 0
                 && block.OpenBraceToken.GetFullSpanEndLine() == statement.GetFullSpanStartLine())
             {
-                statement = statement.WithLeadingTrivia(statement.GetLeadingTrivia().Insert(0, CSharpFactory.NewLine));
+                statement = statement.WithLeadingTrivia(statement.GetLeadingTrivia().Insert(0, CSharpFactory.NewLineTrivia()));
             }
 
             BlockSyntax newBlock = block.WithStatements(block.Statements.Insert(index + 1, statement));
 
-            root = root.ReplaceNode(block, newBlock);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(block, newBlock, cancellationToken).ConfigureAwait(false);
         }
 
         private static SyntaxRemoveOptions GetRemoveOptions(StatementSyntax statement)
         {
-            SyntaxRemoveOptions removeOptions = MemberRemover.DefaultRemoveOptions;
+            SyntaxRemoveOptions removeOptions = SyntaxRemover.DefaultMemberRemoveOptions;
 
             if (statement.GetLeadingTrivia().All(f => f.IsWhitespaceOrEndOfLineTrivia()))
                 removeOptions &= ~SyntaxRemoveOptions.KeepLeadingTrivia;
@@ -235,15 +226,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             SwitchStatementSyntax switchStatement,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SwitchStatementSyntax newSwitchStatement = switchStatement
                 .WithSections(SyntaxFactory.List<SwitchSectionSyntax>())
                 .WithFormatterAnnotation();
 
-            root = root.ReplaceNode(switchStatement, newSwitchStatement);
-
-            return document.WithSyntaxRoot(root);
+            return await document.ReplaceNodeAsync(switchStatement, newSwitchStatement, cancellationToken).ConfigureAwait(false);
         }
     }
 }

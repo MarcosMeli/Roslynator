@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class AttributeListRefactoring
     {
@@ -19,7 +19,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             {
                 SyntaxList<AttributeListSyntax> lists = member.GetAttributeLists();
 
-                if (lists.Count > 0)
+                if (lists.Any())
                 {
                     var info = new SelectedNodesInfo<AttributeListSyntax>(lists, context.Span);
 
@@ -62,8 +62,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeListSyntax[] attributeLists,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SyntaxList<AttributeListSyntax> lists = member.GetAttributeLists();
 
             var newLists = new List<AttributeListSyntax>();
@@ -78,11 +76,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             for (int i = index + attributeLists.Length; i < lists.Count; i++)
                 newLists.Add(lists[i]);
 
-            SyntaxNode newRoot = root.ReplaceNode(
+            return await document.ReplaceNodeAsync(
                 member,
-                member.SetAttributeLists(newLists.ToSyntaxList()));
-
-            return document.WithSyntaxRoot(newRoot);
+                member.SetAttributeLists(newLists.ToSyntaxList()),
+                cancellationToken).ConfigureAwait(false);
         }
 
         public static async Task<Document> MergeAsync(
@@ -91,8 +88,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             AttributeListSyntax[] attributeLists,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             SyntaxList<AttributeListSyntax> lists = member.GetAttributeLists();
 
             var newLists = new List<AttributeListSyntax>(lists.Count - attributeLists.Length + 1);
@@ -107,11 +102,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             for (int i = index + attributeLists.Length; i < lists.Count; i++)
                 newLists.Add(lists[i]);
 
-            SyntaxNode newRoot = root.ReplaceNode(
+            return await document.ReplaceNodeAsync(
                 member,
-                member.SetAttributeLists(newLists.ToSyntaxList()));
-
-            return document.WithSyntaxRoot(newRoot);
+                member.SetAttributeLists(newLists.ToSyntaxList()),
+                cancellationToken).ConfigureAwait(false);
         }
     }
 }

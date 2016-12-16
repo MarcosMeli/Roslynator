@@ -2,19 +2,27 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class BinaryExpressionDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.FormatBinaryOperatorOnNextLine);
+        {
+            get
+            {
+                return ImmutableArray.Create(
+                    DiagnosticDescriptors.FormatBinaryOperatorOnNextLine,
+                    DiagnosticDescriptors.AvoidNullLiteralExpressionOnLeftSideOfBinaryExpression,
+                    DiagnosticDescriptors.UseStringIsNullOrEmptyMethod);
+            }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -51,68 +59,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var binaryExpression = (BinaryExpressionSyntax)context.Node;
 
-            if (binaryExpression.Left != null
-                && binaryExpression.Right != null
-                && !binaryExpression.Left.IsMissing
-                && !binaryExpression.Right.IsMissing
-                && !IsStringConcatenation(context, binaryExpression)
-                && binaryExpression.Left.GetTrailingTrivia().All(f => f.IsKind(SyntaxKind.WhitespaceTrivia))
-                && CheckOperatorTrailingTrivia(binaryExpression.OperatorToken.TrailingTrivia)
-                && binaryExpression.Right.GetLeadingTrivia().All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-            {
-                context.ReportDiagnostic(
-                    DiagnosticDescriptors.FormatBinaryOperatorOnNextLine,
-                    binaryExpression.OperatorToken.GetLocation());
-            }
-        }
+            FormatBinaryOperatorOnNextLineRefactoring.Analyze(context, binaryExpression);
 
-        private static bool IsStringConcatenation(SyntaxNodeAnalysisContext context, BinaryExpressionSyntax binaryExpression)
-        {
-            return binaryExpression.IsKind(SyntaxKind.AddExpression)
-                && (IsStringExpression(context, binaryExpression.Left) || IsStringExpression(context, binaryExpression.Right));
-        }
+            AvoidNullLiteralExpressionOnLeftSideOfBinaryExpressionRefactoring.Analyze(context, binaryExpression);
 
-        private static bool IsStringExpression(SyntaxNodeAnalysisContext context, ExpressionSyntax expression)
-        {
-            if (expression.IsKind(SyntaxKind.StringLiteralExpression)
-                || expression.IsKind(SyntaxKind.InterpolatedStringExpression))
-            {
-                return true;
-            }
-
-            ITypeSymbol typeSymbol = context.SemanticModel
-                .GetTypeInfo(expression, context.CancellationToken)
-                .ConvertedType;
-
-            return typeSymbol?.IsNamedType() == true
-                && ((INamedTypeSymbol)typeSymbol).IsString();
-        }
-
-        private static bool CheckOperatorTrailingTrivia(SyntaxTriviaList triviaList)
-        {
-            bool result = false;
-
-            foreach (SyntaxTrivia trivia in triviaList)
-            {
-                switch (trivia.Kind())
-                {
-                    case SyntaxKind.WhitespaceTrivia:
-                        {
-                            continue;
-                        }
-                    case SyntaxKind.EndOfLineTrivia:
-                        {
-                            result = true;
-                            continue;
-                        }
-                    default:
-                        {
-                            return false;
-                        }
-                }
-            }
-
-            return result;
+            UseStringIsNullOrEmptyMethodRefactoring.Analyze(context, binaryExpression);
         }
     }
 }

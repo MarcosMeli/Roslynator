@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
+using static Roslynator.CSharp.CSharpFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class FormatConditionalExpressionOnMultipleLinesRefactoring
     {
@@ -17,36 +17,38 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ConditionalExpressionSyntax conditionalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
-            SyntaxNode newRoot = oldRoot.ReplaceNode(conditionalExpression, CreateMultilineConditionalExpression(conditionalExpression));
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(
+                conditionalExpression,
+                CreateMultilineConditionalExpression(conditionalExpression),
+                cancellationToken).ConfigureAwait(false);
         }
 
         private static ConditionalExpressionSyntax CreateMultilineConditionalExpression(ConditionalExpressionSyntax conditionalExpression)
         {
-            SyntaxTriviaList triviaList = SyntaxUtility.GetIndentTrivia(conditionalExpression.Parent).Add(CSharpFactory.IndentTrivia);
+            SyntaxTriviaList triviaList = SyntaxHelper.GetIndentTrivia(conditionalExpression.Parent)
+                .Add(IndentTrivia())
+                .Insert(0, NewLineTrivia());
 
-            triviaList = triviaList.Insert(0, CSharpFactory.NewLine);
+            ExpressionSyntax condition = conditionalExpression.Condition;
 
-            ParenthesizedExpressionSyntax condition = null;
-            if (conditionalExpression.Condition.IsKind(SyntaxKind.ParenthesizedExpression))
+            ParenthesizedExpressionSyntax newCondition = null;
+
+            if (condition.IsKind(SyntaxKind.ParenthesizedExpression))
             {
-                condition = (ParenthesizedExpressionSyntax)conditionalExpression.Condition;
+                newCondition = (ParenthesizedExpressionSyntax)condition;
             }
             else
             {
-                condition = ParenthesizedExpression(conditionalExpression.Condition.WithoutTrailingTrivia())
+                newCondition = ParenthesizedExpression(condition.WithoutTrailingTrivia())
                     .WithCloseParenToken(CreateTokenWithTrailingNewLine(SyntaxKind.CloseParenToken));
             }
 
             return ConditionalExpression(
-                    condition.WithoutTrailingTrivia(),
+                    newCondition.WithoutTrailingTrivia(),
+                    CreateToken(SyntaxKind.QuestionToken, triviaList),
                     conditionalExpression.WhenTrue.WithoutTrailingTrivia(),
-                    conditionalExpression.WhenFalse.WithoutTrailingTrivia())
-                .WithQuestionToken(CreateToken(SyntaxKind.QuestionToken, triviaList))
-                .WithColonToken(CreateToken(SyntaxKind.ColonToken, triviaList));
+                    CreateToken(SyntaxKind.ColonToken, triviaList),
+                    conditionalExpression.WhenFalse.WithoutTrailingTrivia());
         }
 
         private static SyntaxToken CreateToken(SyntaxKind kind, SyntaxTriviaList triviaList)
@@ -61,7 +63,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             return Token(
                 TriviaList(),
                 kind,
-                TriviaList(CSharpFactory.NewLine));
+                TriviaList(NewLineTrivia()));
         }
     }
 }

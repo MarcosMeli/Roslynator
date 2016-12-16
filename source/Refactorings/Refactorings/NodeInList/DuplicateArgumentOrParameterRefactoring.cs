@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.NodeInList
+namespace Roslynator.CSharp.Refactorings.NodeInList
 {
     internal abstract class DuplicateArgumentOrParameterRefactoring<TSyntax, TListSyntax> : NodeInListRefactoring<TSyntax, TListSyntax>
         where TSyntax : SyntaxNode
@@ -35,17 +35,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.NodeInList
             int nodeIndex,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             var info = new RewriterInfo<TSyntax>(
                 List[nodeIndex],
                 List[nodeIndex - 1],
                 GetTokenBefore(nodeIndex),
                 GetTokenAfter(nodeIndex));
 
-            SyntaxNode newRoot = root.ReplaceNode(ListSyntax, Rewrite(info));
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(ListSyntax, Rewrite(info), cancellationToken).ConfigureAwait(false);
         }
     }
 }

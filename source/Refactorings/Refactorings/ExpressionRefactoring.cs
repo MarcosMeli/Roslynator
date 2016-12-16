@@ -2,35 +2,45 @@
 
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings.ExtractCondition;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class ExpressionRefactoring
     {
-        public static async Task ComputeRefactorings(RefactoringContext context, ExpressionSyntax expression)
+        public static async Task ComputeRefactoringsAsync(RefactoringContext context, ExpressionSyntax expression)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractExpressionFromCondition))
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ExtractExpressionFromCondition)
+                && context.Span.IsBetweenSpans(expression))
             {
-                ExtractExpressionFromIfConditionRefactoring.ComputeRefactoring(context, expression);
-                ExtractExpressionFromWhileConditionRefactoring.ComputeRefactoring(context, expression);
+                ExtractConditionRefactoring.ComputeRefactoring(context, expression);
             }
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ParenthesizeExpression)
                 && context.Span.IsBetweenSpans(expression)
-                && WrapExpressionInParenthesesRefactoring.CanRefactor(context, expression))
+                && ParenthesizeExpressionRefactoring.CanRefactor(context, expression))
             {
                 context.RegisterRefactoring(
                     $"Parenthesize '{expression.ToString()}'",
-                    cancellationToken => WrapExpressionInParenthesesRefactoring.RefactorAsync(context.Document, expression, cancellationToken));
+                    cancellationToken => ParenthesizeExpressionRefactoring.RefactorAsync(context.Document, expression, cancellationToken));
             }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceNullLiteralExpressionWithDefaultExpression))
+                await ReplaceNullLiteralExpressionWithDefaultExpressionRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
 
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceConditionalExpressionWithExpression))
                 ReplaceConditionalExpressionWithExpressionRefactoring.ComputeRefactoring(context, expression);
 
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.CheckExpressionForNull)
+                && context.Span.IsContainedInSpanOrBetweenSpans(expression))
+            {
+                await CheckExpressionForNullRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
+            }
+
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceExpressionWithConstantValue)
                 && context.Span.IsBetweenSpans(expression))
             {
-                await ReplaceExpressionWithConstantValueRefactoring.ComputeRefactoringAsync(context, expression);
+                await ReplaceExpressionWithConstantValueRefactoring.ComputeRefactoringAsync(context, expression).ConfigureAwait(false);
             }
         }
     }

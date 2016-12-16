@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.FindSymbols;
 using Microsoft.CodeAnalysis.Text;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
+namespace Roslynator.CSharp.Refactorings.InlineMethod
 {
     internal static class InlineMethodRefactoring
     {
@@ -28,7 +28,8 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
                 {
                     MethodDeclarationSyntax method = await GetMethodAsync(methodSymbol, context.CancellationToken).ConfigureAwait(false);
 
-                    if (method != null)
+                    if (method != null
+                        && !invocation.Ancestors().Any(f => f == method))
                     {
                         ExpressionSyntax expression = GetMethodExpression(method);
 
@@ -42,12 +43,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
                                     "Inline method",
                                     c => InlineMethodAsync(context.Document, invocation, expression, parameterInfos.ToArray(), c));
 
-                                if (!method.Contains(invocation))
-                                {
-                                    context.RegisterRefactoring(
-                                        "Inline and remove method",
-                                        c => InlineAndRemoveMethodAsync(context.Document, invocation, method, expression, parameterInfos.ToArray(), c));
-                                }
+                                context.RegisterRefactoring(
+                                    "Inline and remove method",
+                                    c => InlineAndRemoveMethodAsync(context.Document, invocation, method, expression, parameterInfos.ToArray(), c));
                             }
                         }
                         else if (methodSymbol.ReturnsVoid
@@ -67,12 +65,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
                                         "Inline method",
                                         c => InlineMethodAsync(context.Document, expressionStatement, statements, parameterInfos.ToArray(), c));
 
-                                    if (!method.Contains(invocation))
-                                    {
-                                        context.RegisterRefactoring(
-                                            "Inline and remove method",
-                                            c => InlineAndRemoveMethodAsync(context.Document, expressionStatement, method, statements, parameterInfos.ToArray(), c));
-                                    }
+                                    context.RegisterRefactoring(
+                                        "Inline and remove method",
+                                        c => InlineAndRemoveMethodAsync(context.Document, expressionStatement, method, statements, parameterInfos.ToArray(), c));
                                 }
                             }
                         }
@@ -163,7 +158,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             {
                 var methodSymbol = (IMethodSymbol)symbol;
 
-                if (methodSymbol.IsOrdinary())
+                if (methodSymbol.MethodKind == MethodKind.Ordinary)
                 {
                     if (methodSymbol.IsStatic)
                     {
@@ -171,7 +166,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
                     }
                     else
                     {
-                        TypeDeclarationSyntax containingType = SyntaxUtility.GetContainingType(invocation);
+                        TypeDeclarationSyntax containingType = invocation.GetContainingType();
 
                         if (containingType != null)
                         {
@@ -222,8 +217,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             ParameterInfo[] parameterInfos,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             expression = await ReplaceParameterExpressionWithArgumentExpressionAsync(
                 parameterInfos,
                 invocation,
@@ -231,9 +224,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
                 document.Project.Solution,
                 cancellationToken).ConfigureAwait(false);
 
-            SyntaxNode newRoot = root.ReplaceNode(invocation, expression);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(invocation, expression, cancellationToken).ConfigureAwait(false);
         }
 
         private static async Task<Document> InlineMethodAsync(
@@ -243,18 +234,14 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             ParameterInfo[] parameterInfos,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             statements = await ReplaceParameterExpressionWithArgumentExpressionAsync(
                 parameterInfos,
                 statements,
                 document.Project.Solution,
-                cancellationToken);
+                cancellationToken).ConfigureAwait(false);
 
             statements[0] = statements[0].WithLeadingTrivia(expressionStatement.GetLeadingTrivia());
             statements[statements.Length - 1] = statements[statements.Length - 1].WithTrailingTrivia(expressionStatement.GetTrailingTrivia());
-
-            SyntaxNode newRoot = null;
 
             if (expressionStatement.Parent?.IsKind(SyntaxKind.Block) == true)
             {
@@ -262,14 +249,12 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
 
                 BlockSyntax newBlock = block.WithStatements(block.Statements.ReplaceRange(expressionStatement, statements));
 
-                newRoot = root.ReplaceNode(block, newBlock);
+                return await document.ReplaceNodeAsync(block, newBlock, cancellationToken).ConfigureAwait(false);
             }
             else
             {
-                newRoot = root.ReplaceNode(expressionStatement, Block(statements));
+                return await document.ReplaceNodeAsync(expressionStatement, Block(statements), cancellationToken).ConfigureAwait(false);
             }
-
-            return document.WithSyntaxRoot(newRoot);
         }
 
         private static async Task<Solution> InlineAndRemoveMethodAsync(
@@ -300,7 +285,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             {
                 Solution solution = document.Project.Solution;
 
-                document = await InlineMethodAsync(document, invocation, expression, parameterInfos, cancellationToken);
+                document = await InlineMethodAsync(document, invocation, expression, parameterInfos, cancellationToken).ConfigureAwait(false);
 
                 DocumentId documentId = solution.GetDocumentId(methodDeclaration.SyntaxTree);
 
@@ -356,7 +341,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             {
                 Solution solution = document.Project.Solution;
 
-                document = await InlineMethodAsync(document, expressionStatement, statements, parameterInfos, cancellationToken);
+                document = await InlineMethodAsync(document, expressionStatement, statements, parameterInfos, cancellationToken).ConfigureAwait(false);
 
                 DocumentId documentId = solution.GetDocumentId(methodDeclaration.SyntaxTree);
 
@@ -387,9 +372,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings.InlineMethod
             Solution solution,
             CancellationToken cancellationToken)
         {
-            ExpressionSyntax newExpression = await ReplaceParameterExpressionWithArgumentExpressionAsync(parameterInfos, expression, solution, cancellationToken);
+            ExpressionSyntax newExpression = await ReplaceParameterExpressionWithArgumentExpressionAsync(parameterInfos, expression, solution, cancellationToken).ConfigureAwait(false);
 
-            if (!SyntaxUtility.AreParenthesesRedundantOrInvalid(invocation))
+            if (!SyntaxAnalyzer.AreParenthesesRedundantOrInvalid(invocation))
             {
                 newExpression = newExpression
                    .WithoutTrivia()

@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -10,17 +11,164 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.Simplification;
 using Microsoft.CodeAnalysis.Text;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis
+namespace Roslynator
 {
     public static class SyntaxNodeExtensions
     {
+        public static SyntaxNode ReplaceNodes<TNode>(
+            this SyntaxNode node,
+            ISymbol symbol,
+            TNode newNode,
+            SemanticModel semanticModel,
+            CancellationToken cancellationToken = default(CancellationToken)) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            if (symbol == null)
+                throw new ArgumentNullException(nameof(symbol));
+
+            if (newNode == null)
+                throw new ArgumentNullException(nameof(newNode));
+
+            if (semanticModel == null)
+                throw new ArgumentNullException(nameof(semanticModel));
+
+            List<TNode> identifierNames = null;
+
+            SyntaxKind kind = newNode.Kind();
+
+            foreach (SyntaxNode descendant in node.DescendantNodes())
+            {
+                if (descendant.IsKind(kind)
+                    && symbol.Equals(semanticModel.GetSymbol(descendant, cancellationToken)))
+                {
+                    if (identifierNames == null)
+                        identifierNames = new List<TNode>();
+
+                    identifierNames.Add((TNode)descendant);
+                }
+            }
+
+            if (identifierNames != null)
+                return node.ReplaceNodes(identifierNames, (f, g) => newNode.WithTriviaFrom(f));
+
+            return node;
+        }
+
+        public static bool IsNoneKind(this SyntaxNode node)
+        {
+            return Microsoft.CodeAnalysis.CSharpExtensions.IsKind(node, SyntaxKind.None);
+        }
+
+        public static TypeDeclarationSyntax GetContainingType(this SyntaxNode node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            foreach (SyntaxNode ancestor in node.Ancestors())
+            {
+                switch (ancestor.Kind())
+                {
+                    case SyntaxKind.ClassDeclaration:
+                    case SyntaxKind.InterfaceDeclaration:
+                    case SyntaxKind.StructDeclaration:
+                        return (TypeDeclarationSyntax)ancestor;
+                }
+            }
+
+            return null;
+        }
+
+        public static SyntaxNode GetContainingMethod(this SyntaxNode node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            foreach (SyntaxNode ancestor in node.Ancestors())
+            {
+                switch (ancestor.Kind())
+                {
+                    case SyntaxKind.MethodDeclaration:
+                    case SyntaxKind.SimpleLambdaExpression:
+                    case SyntaxKind.ParenthesizedLambdaExpression:
+                    case SyntaxKind.AnonymousMethodExpression:
+                        {
+                            return ancestor;
+                        }
+                    case SyntaxKind.PropertyDeclaration:
+                    case SyntaxKind.IndexerDeclaration:
+                    case SyntaxKind.ConstructorDeclaration:
+                    case SyntaxKind.DestructorDeclaration:
+                    case SyntaxKind.EventDeclaration:
+                    case SyntaxKind.ConversionOperatorDeclaration:
+                    case SyntaxKind.OperatorDeclaration:
+                    case SyntaxKind.IncompleteMember:
+                        {
+                            break;
+                        }
+                }
+            }
+
+            return null;
+        }
+
+        public static IEnumerable<DirectiveTriviaSyntax> DescendantDirectives(this SyntaxNode node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            foreach (SyntaxTrivia trivia in node.DescendantTrivia(descendIntoTrivia: true))
+            {
+                if (trivia.IsDirective && trivia.HasStructure)
+                {
+                    var directive = trivia.GetStructure() as DirectiveTriviaSyntax;
+
+                    if (directive != null)
+                        yield return directive;
+                }
+            }
+        }
+
+        public static IEnumerable<DirectiveTriviaSyntax> DescendantRegionDirectives(this SyntaxNode node)
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            foreach (SyntaxNode descendant in node.DescendantNodesAndSelf(descendIntoTrivia: true))
+            {
+                if (descendant.IsKind(SyntaxKind.RegionDirectiveTrivia, SyntaxKind.EndRegionDirectiveTrivia))
+                    yield return (DirectiveTriviaSyntax)descendant;
+            }
+        }
+
         public static IEnumerable<SyntaxTrivia> GetLeadingAndTrailingTrivia(this SyntaxNode node)
         {
             if (node == null)
                 throw new ArgumentNullException(nameof(node));
 
             return node.GetLeadingTrivia().Concat(node.GetTrailingTrivia());
+        }
+
+        public static TNode PrependLeadingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia> trivia) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            if (trivia == null)
+                throw new ArgumentNullException(nameof(trivia));
+
+            return node.WithLeadingTrivia(trivia.Concat(node.GetLeadingTrivia()));
+        }
+
+        public static TNode PrependLeadingTrivia<TNode>(this TNode node, SyntaxTrivia trivia) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            return node.WithLeadingTrivia(node.GetLeadingTrivia().Insert(0, trivia));
         }
 
         public static TNode AppendTrailingTrivia<TNode>(this TNode node, IEnumerable<SyntaxTrivia> trivia) where TNode : SyntaxNode
@@ -32,6 +180,14 @@ namespace Pihrtsoft.CodeAnalysis
                 throw new ArgumentNullException(nameof(trivia));
 
             return node.WithTrailingTrivia(node.GetTrailingTrivia().AddRange(trivia));
+        }
+
+        public static TNode AppendTrailingTrivia<TNode>(this TNode node, SyntaxTrivia trivia) where TNode : SyntaxNode
+        {
+            if (node == null)
+                throw new ArgumentNullException(nameof(node));
+
+            return node.WithTrailingTrivia(node.GetTrailingTrivia().Add(trivia));
         }
 
         public static bool IsDescendantOf(this SyntaxNode node, SyntaxKind kind)
@@ -112,14 +268,16 @@ namespace Pihrtsoft.CodeAnalysis
                 case SyntaxKind.CoalesceExpression:
                     return true;
                 default:
-                    return false;
+                    {
+                        Debug.Assert(!(node is BinaryExpressionSyntax), node.Kind().ToString());
+                        return false;
+                    }
             }
         }
 
         public static bool IsBooleanLiteralExpression(this SyntaxNode node)
         {
-            return node.IsKind(SyntaxKind.TrueLiteralExpression)
-                || node.IsKind(SyntaxKind.FalseLiteralExpression);
+            return node.IsKind(SyntaxKind.TrueLiteralExpression, SyntaxKind.FalseLiteralExpression);
         }
 
         public static bool IsNumericLiteralExpression(this SyntaxNode node, int value)
@@ -311,29 +469,6 @@ namespace Pihrtsoft.CodeAnalysis
                 && IsKind(node.Parent, kind1, kind2, kind3);
         }
 
-        public static SyntaxNode FirstAncestorOrSelf(this SyntaxNode node, params SyntaxKind[] kinds)
-        {
-            if (node == null)
-                throw new ArgumentNullException(nameof(node));
-
-            if (kinds == null)
-                throw new ArgumentNullException(nameof(kinds));
-
-            do
-            {
-                for (int i = 0; i < kinds.Length; i++)
-                {
-                    if (node.IsKind(kinds[i]))
-                        return node;
-                }
-
-                node = node.Parent;
-
-            } while (node != null);
-
-            return null;
-        }
-
         public static bool IsSingleLine(
             this SyntaxNode node,
             bool includeExteriorTrivia = true,
@@ -481,7 +616,10 @@ namespace Pihrtsoft.CodeAnalysis
                 case SyntaxKind.IncompleteMember:
                     return true;
                 default:
-                    return false;
+                    {
+                        Debug.Assert(!(node is MemberDeclarationSyntax), node.Kind().ToString());
+                        return false;
+                    }
             }
         }
 
@@ -557,6 +695,16 @@ namespace Pihrtsoft.CodeAnalysis
                 throw new ArgumentNullException(nameof(node));
 
             return node.WithAdditionalAnnotations(Simplifier.Annotation);
+        }
+
+        public static SyntaxList<TNode> ToSyntaxList<TNode>(this IEnumerable<TNode> nodes) where TNode : SyntaxNode
+        {
+            return List(nodes);
+        }
+
+        public static SeparatedSyntaxList<TNode> ToSeparatedSyntaxList<TNode>(this IEnumerable<TNode> nodes) where TNode : SyntaxNode
+        {
+            return SeparatedList(nodes);
         }
     }
 }

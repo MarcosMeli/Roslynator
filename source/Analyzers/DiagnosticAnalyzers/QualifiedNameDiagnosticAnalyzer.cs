@@ -6,8 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class QualifiedNameDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -35,28 +36,11 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
             if (GeneratedCodeAnalyzer?.IsGeneratedCode(context) == true)
                 return;
 
-            if (!context.Node.IsParentKind(SyntaxKind.UsingDirective))
-            {
-                var qualifiedName = (QualifiedNameSyntax)context.Node;
+            var qualifiedName = (QualifiedNameSyntax)context.Node;
 
-                var namedTypeSymbol = context.SemanticModel.GetSymbolInfo(qualifiedName, context.CancellationToken).Symbol as INamedTypeSymbol;
+            UsePredefinedTypeRefactoring.Analyze(context, qualifiedName);
 
-                if (namedTypeSymbol != null)
-                {
-                    if (namedTypeSymbol.IsPredefinedType())
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.UsePredefinedType,
-                            qualifiedName.GetLocation());
-                    }
-                    else if (namedTypeSymbol.ConstructedFrom.SpecialType == SpecialType.System_Nullable_T)
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.SimplifyNullableOfT,
-                            qualifiedName.GetLocation());
-                    }
-                }
-            }
+            SimplifyNullableOfTRefactoring.Analyze(context, qualifiedName);
         }
     }
 }

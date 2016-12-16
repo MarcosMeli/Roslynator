@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class SwapExpressionsInConditionalExpressionRefactoring
     {
@@ -22,17 +22,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             ConditionalExpressionSyntax conditionalExpression,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             ConditionalExpressionSyntax newConditionalExpression = conditionalExpression
-                .WithCondition(conditionalExpression.Condition.Negate())
+                .WithCondition(conditionalExpression.Condition.LogicallyNegate())
                 .WithWhenTrue(conditionalExpression.WhenFalse.WithTriviaFrom(conditionalExpression.WhenTrue))
                 .WithWhenFalse(conditionalExpression.WhenTrue.WithTriviaFrom(conditionalExpression.WhenFalse))
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(conditionalExpression, newConditionalExpression);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(conditionalExpression, newConditionalExpression, cancellationToken).ConfigureAwait(false);
         }
     }
 }

@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class MergeLocalDeclarationsRefactoring
     {
@@ -76,8 +76,6 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             LocalDeclarationStatementSyntax[] localDeclarations,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode root = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             LocalDeclarationStatementSyntax localDeclaration = localDeclarations[0];
 
             SyntaxList<StatementSyntax> statements = container.Statements;
@@ -102,9 +100,10 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             for (int i = 1; i < localDeclarations.Length; i++)
                 newStatements = newStatements.RemoveAt(index + 1);
 
-            SyntaxNode newRoot = root.ReplaceNode(container.Node, container.NodeWithStatements(newStatements));
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(
+                container.Node,
+                container.NodeWithStatements(newStatements),
+                cancellationToken).ConfigureAwait(false);
         }
     }
 }

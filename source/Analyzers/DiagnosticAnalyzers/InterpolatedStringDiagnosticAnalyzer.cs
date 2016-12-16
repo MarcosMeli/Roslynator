@@ -6,10 +6,9 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
-using Microsoft.CodeAnalysis.Text;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class InterpolatedStringDiagnosticAnalyzer : BaseDiagnosticAnalyzer
@@ -36,14 +35,9 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             if (ReplaceInterpolatedStringWithStringLiteralRefactoring.CanRefactor(interpolatedString))
             {
-                SyntaxToken token = interpolatedString.StringStartToken;
-
-                if (token.Text.StartsWith("$"))
-                {
-                    context.ReportDiagnostic(
-                        DiagnosticDescriptors.AvoidInterpolatedStringWithNoInterpolation,
-                        Location.Create(interpolatedString.SyntaxTree, new TextSpan(token.SpanStart, 1)));
-                }
+                context.ReportDiagnostic(
+                    DiagnosticDescriptors.AvoidInterpolatedStringWithNoInterpolation,
+                    Location.Create(context.SyntaxTree(), interpolatedString.GetDollarSpan()));
             }
         }
     }

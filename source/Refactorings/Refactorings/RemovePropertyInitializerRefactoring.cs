@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings
 {
     internal static class RemovePropertyInitializerRefactoring
     {
@@ -22,17 +22,13 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.Refactorings
             PropertyDeclarationSyntax propertyDeclaration,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            SyntaxNode oldRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
             PropertyDeclarationSyntax newNode = propertyDeclaration
                 .WithInitializer(null)
                 .WithSemicolonToken(Token(SyntaxKind.None))
                 .WithTriviaFrom(propertyDeclaration)
                 .WithFormatterAnnotation();
 
-            SyntaxNode newRoot = oldRoot.ReplaceNode(propertyDeclaration, newNode);
-
-            return document.WithSyntaxRoot(newRoot);
+            return await document.ReplaceNodeAsync(propertyDeclaration, newNode, cancellationToken).ConfigureAwait(false);
         }
     }
 }

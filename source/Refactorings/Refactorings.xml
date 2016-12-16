@@ -51,12 +51,6 @@
       <Image>AddCastExpressionToVariableDeclaration</Image>
     </Images>
   </Refactoring>
-  <Refactoring Id="AddConfigureAwait" Title="Add 'ConfigureAwait(false)'" ExtensionVersion="0.95.0">
-    <Syntaxes>
-      <Syntax>awaitable method invocation</Syntax>
-    </Syntaxes>
-    <Scope>method name</Scope>
-  </Refactoring>
   <Refactoring Id="AddDefaultValueToParameter" Title="Add default value to parameter" ExtensionVersion="0.92.0">
     <Syntaxes>
       <Syntax>parameter without default value</Syntax>
@@ -66,6 +60,11 @@
   <Refactoring Id="AddDefaultValueToReturnStatement" Title="Add default value to return statement" ExtensionVersion="0.96.0">
     <Syntaxes>
       <Syntax>return statement without expression</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="AddExceptionToDocumentationComment" Title="Add exception to documentation comment" ExtensionVersion="1.1.6">
+    <Syntaxes>
+      <Syntax>throw statement</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="AddIdentifierToVariableDeclaration" Title="Add identifier to variable declaration" ExtensionVersion="0.93.0">
@@ -95,6 +94,25 @@
       <Syntax>member access expression (public or internal static class)</Syntax>
     </Syntaxes>
     <Scope>selected class name</Scope>
+  </Refactoring>
+  <Refactoring Id="CallConfigureAwait" Title="Call 'ConfigureAwait(false)'" ExtensionVersion="0.95.0">
+    <Syntaxes>
+      <Syntax>awaitable method invocation</Syntax>
+    </Syntaxes>
+    <Scope>method name</Scope>
+  </Refactoring>
+  <Refactoring Id="CallExtensionMethodAsInstanceMethod" Title="Call extension method as instance method" ExtensionVersion="1.1.7">
+    <Syntaxes>
+      <Syntax>method invocation</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="CallToMethod" Title="Call 'To...' method" ExtensionVersion="1.0.7">
+    <Syntaxes>
+      <Syntax>argument</Syntax>
+      <Syntax>assignment expression</Syntax>
+      <Syntax>return statement</Syntax>
+      <Syntax>variable declaration</Syntax>
+    </Syntaxes>
   </Refactoring>
   <Refactoring Id="CollapseToInitializer" Title="Collapse to initalizer" ExtensionVersion="0.98.0">
     <Syntaxes>
@@ -134,13 +152,14 @@
     </Syntaxes>
     <Scope>opening or closing brace</Scope>
   </Refactoring>
-  <Refactoring Id="CreateConditionFromBooleanExpression" Title="Create condition from boolean expression" ExtensionVersion="0.94.0">
+  <Refactoring Id="CopyDocumentationCommentFromBaseMember" Title="Copy documentation comment from base member" ExtensionVersion="1.1.2">
     <Syntaxes>
-      <Syntax>return statement</Syntax>
-      <Syntax>yield return statement</Syntax>
-      <Syntax>expression statement</Syntax>
+      <Syntax>constructor</Syntax>
+      <Syntax>method</Syntax>
+      <Syntax>property</Syntax>
+      <Syntax>indexer</Syntax>
+      <Syntax>event</Syntax>
     </Syntaxes>
-    <Scope>boolean expression</Scope>
   </Refactoring>
   <Refactoring Id="DuplicateArgument" Title="Duplicate argument" ExtensionVersion="0.9.60">
     <Syntaxes>
@@ -339,6 +358,18 @@
       <Image>FormatAllParametersOnSingleLine</Image>
     </Images>
   </Refactoring>
+  <Refactoring Id="GenerateBaseConstructors" Title="Generate base constructors" ExtensionVersion="1.0.5">
+    <Syntaxes>
+      <Syntax>class declaration</Syntax>
+    </Syntaxes>
+    <Scope>identifier</Scope>
+  </Refactoring>
+  <Refactoring Id="GenerateOnEventMethod" Title="Generate 'OnEvent' method" ExtensionVersion="1.0.6">
+    <Syntaxes>
+      <Syntax>event</Syntax>
+    </Syntaxes>
+    <Scope>identifier</Scope>
+  </Refactoring>
   <Refactoring Id="GenerateSwitchSections" Title="Generate switch sections" ExtensionVersion="0.9.70">
     <Syntaxes>
       <Syntax>switch statement (that is empty or contains only default section)</Syntax>
@@ -384,6 +415,12 @@
     </Syntaxes>
     <Scope>type</Scope>
   </Refactoring>
+  <Refactoring Id="CheckExpressionForNull" Title="Check expression for null" ExtensionVersion="1.1.8">
+    <Syntaxes>
+      <Syntax>local declaration (identifier)</Syntax>
+      <Syntax>assignment expression (left)</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="CheckParameterForNull" Title="Check parameter for null" ExtensionVersion="0.9.0">
     <Syntaxes>
       <Syntax>parameter</Syntax>
@@ -393,6 +430,12 @@
   <Refactoring Id="InitializeLocalWithDefaultValue" Title="Initialize local with default value" ExtensionVersion="0.92.0">
     <Syntaxes>
       <Syntax>local declaration without initializer</Syntax>
+    </Syntaxes>
+    <Scope>identifier</Scope>
+  </Refactoring>
+  <Refactoring Id="InlineAliasExpression" Title="Inline alias expression" ExtensionVersion="1.0.9">
+    <Syntaxes>
+      <Syntax>using alias directive</Syntax>
     </Syntaxes>
     <Scope>identifier</Scope>
   </Refactoring>
@@ -428,15 +471,40 @@
     </Syntaxes>
     <Scope></Scope>
   </Refactoring>
+  <Refactoring Id="IntroduceFieldToLockOn" Title="Introduce field to lock on" ExtensionVersion="1.1.3">
+    <Syntaxes>
+      <Syntax>lock statement</Syntax>
+    </Syntaxes>
+    <Scope>missing expression</Scope>
+  </Refactoring>
+  <Refactoring Id="IntroduceLocalFromStatementThatReturnsValue" Title="Introduce local from statement that returns value" ExtensionVersion="1.1.7">
+    <Syntaxes>
+      <Syntax>expression statement</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="MakeMemberAbstract" Title="Make member abstract" ExtensionVersion="0.9.0">
     <Syntaxes>
       <Syntax>non-abstract indexer/method/property in abstract class</Syntax>
     </Syntaxes>
     <Scope>indexer/method/property header</Scope>
   </Refactoring>
+  <Refactoring Id="MakeMemberVirtual" Title="Make member virtual" ExtensionVersion="0.0.0">
+    <Syntaxes>
+      <Syntax>method declaration</Syntax>
+      <Syntax>indexer declaration</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="MarkAllMembersAsStatic" Title="Mark all members as static" ExtensionVersion="0.9.70">
     <Syntaxes>
       <Syntax>non-static field/method/property/event in static class</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="MarkContainingClassAsAbstract" Title="Mark containing class as abstract" ExtensionVersion="0.0.0">
+    <Syntaxes>
+      <Syntax>method declaration</Syntax>
+      <Syntax>property declaration</Syntax>
+      <Syntax>indexer declaration</Syntax>
+      <Syntax>event declaration</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="MarkMemberAsStatic" Title="Mark member as static" ExtensionVersion="0.9.70">
@@ -459,20 +527,25 @@
       <Syntax>selected if statements</Syntax>
     </Syntaxes>
   </Refactoring>
+  <Refactoring Id="MergeInterpolationIntoInterpolatedString" Title="Merge interpolation into interpolated string" ExtensionVersion="1.1.4">
+    <Syntaxes>
+      <Syntax>interpolation</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="MergeLocalDeclarations" Title="Merge local declarations" ExtensionVersion="1.0.1">
     <Syntaxes>
       <Syntax>local declarations with same type</Syntax>
     </Syntaxes>
   </Refactoring>
-  <Refactoring Id="MergeStringLiterals" Title="Merge string literals" ExtensionVersion="0.9.60">
+  <Refactoring Id="MergeStringExpressions" Title="Merge string expressions" ExtensionVersion="0.0.0">
     <Syntaxes>
-      <Syntax>concatenated string literals</Syntax>
+      <Syntax>concatenated string expressions</Syntax>
     </Syntaxes>
-  </Refactoring>
-  <Refactoring Id="MergeStringLiteralsIntoMultilineStringLiteral" Title="Merge string literals into multiline string literal" ExtensionVersion="0.9.60">
-    <Syntaxes>
-      <Syntax>concatenated string literals</Syntax>
-    </Syntaxes>
+    <Images>
+      <Image>MergeStringExpressions</Image>
+      <Image>MergeStringLiterals</Image>
+      <Image>MergeStringLiteralsIntoMultilineStringLiteral</Image>
+    </Images>
   </Refactoring>
   <Refactoring Id="NegateBinaryExpression" Title="Negate binary expression" ExtensionVersion="0.9.0">
     <Syntaxes>
@@ -483,6 +556,12 @@
     <Syntaxes>
       <Syntax>boolean literal</Syntax>
     </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="NegateIsExpression" Title="Negate is expression" ExtensionVersion="1.1.8">
+    <Syntaxes>
+      <Syntax>is expression</Syntax>
+    </Syntaxes>
+    <Scope>operator</Scope>
   </Refactoring>
   <Refactoring Id="NegateOperator" Title="Negate operator" ExtensionVersion="0.9.0">
     <Syntaxes>
@@ -507,7 +586,7 @@
       <Syntax>selected expression</Syntax>
     </Syntaxes>
   </Refactoring>
-  <Refactoring Id="PromoteLocalToParameter" Title="Promote local to parameter" ExtensionVersion="0.0.0">
+  <Refactoring Id="PromoteLocalToParameter" Title="Promote local to parameter" ExtensionVersion="1.0.4">
     <Syntaxes>
       <Syntax>local declaration in method</Syntax>
     </Syntaxes>
@@ -536,6 +615,11 @@
       <Syntax>interface</Syntax>
     </Syntaxes>
     <Scope>opening or closing brace</Scope>
+  </Refactoring>
+  <Refactoring Id="RemoveAllPreprocessorDirectives" Title="Remove all preprocessor directives" ExtensionVersion="1.0.7">
+    <Syntaxes>
+      <Syntax>preprocessor directive</Syntax>
+    </Syntaxes>
   </Refactoring>
   <Refactoring Id="RemoveAllRegionDirectives" Title="Remove all region directives" ExtensionVersion="0.9.0">
     <Syntaxes>
@@ -611,7 +695,7 @@
       <Syntax>selected lines</Syntax>
     </Syntaxes>
   </Refactoring>
-  <Refactoring Id="RemoveInterpolation" Title="Remove interpolation" ExtensionVersion="0.0.0">
+  <Refactoring Id="RemoveInterpolation" Title="Remove interpolation" ExtensionVersion="1.0.4">
     <Syntaxes>
       <Syntax>string interpolation</Syntax>
     </Syntaxes>
@@ -651,6 +735,11 @@
   <Refactoring Id="RemovePropertyInitializer" Title="Remove property initializer" ExtensionVersion="0.9.0">
     <Syntaxes>
       <Syntax>property initializer</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="RemoveRegion" Title="Remove region" ExtensionVersion="1.1.1">
+    <Syntaxes>
+      <Syntax>region directive</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="RemoveStatement" Title="Remove statement" ExtensionVersion="0.91.0">
@@ -720,6 +809,16 @@
     </Syntaxes>
     <Scope>method name</Scope>
   </Refactoring>
+  <Refactoring Id="ReplaceAsWithCast" Title="Replace as expression with cast expression" ExtensionVersion="1.1.0">
+    <Syntaxes>
+      <Syntax>as expression</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="ReplaceCastWithAs" Title="Replace cast expression with as expression" ExtensionVersion="1.1.8">
+    <Syntaxes>
+      <Syntax>cast expression</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="ReplaceConditionalExpressionWithExpression" Title="Replace conditional expression with expression" ExtensionVersion="0.99.0">
     <Syntaxes>
       <Syntax>conditional expression</Syntax>
@@ -753,6 +852,27 @@
       <Syntax>empty string literal</Syntax>
     </Syntaxes>
   </Refactoring>
+  <Refactoring Id="ReplaceEqualsExpressionWithStringEquals" Title="Replace equals expression with string.Equals" ExtensionVersion="1.1.0">
+    <Syntaxes>
+      <Syntax>equals expression</Syntax>
+      <Syntax>not equals expression</Syntax>
+    </Syntaxes>
+    <Scope>operator</Scope>
+  </Refactoring>
+  <Refactoring Id="ReplaceEqualsExpressionWithStringIsNullOrEmpty" Title="Replace equals expression with string.IsNullOrEmpty" ExtensionVersion="1.1.5">
+    <Syntaxes>
+      <Syntax>equals expression</Syntax>
+      <Syntax>not equals expression</Syntax>
+    </Syntaxes>
+    <Scope>operator</Scope>
+  </Refactoring>
+  <Refactoring Id="ReplaceEqualsExpressionWithStringIsNullOrWhiteSpace" Title="Replace equals expression with string.IsNullOrWhiteSpace" ExtensionVersion="1.1.5">
+    <Syntaxes>
+      <Syntax>equals expression</Syntax>
+      <Syntax>not equals expression</Syntax>
+    </Syntaxes>
+    <Scope>operator</Scope>
+  </Refactoring>
   <Refactoring Id="ReplaceExpressionWithConstantValue" Title="Replace expression with constant value" ExtensionVersion="0.0.0">
     <Syntaxes>
       <Syntax>expression that has constant value</Syntax>
@@ -773,14 +893,29 @@
       <Syntax>for statement</Syntax>
     </Syntaxes>
   </Refactoring>
+  <Refactoring Id="ReplaceForWithWhile" Title="Replace for statement with while statement" ExtensionVersion="0.0.0">
+    <Syntaxes>
+      <Syntax>for statement</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="ReplaceHasFlagWithBitwiseOperation" Title="Replace 'HasFlag' with bitwise operation" ExtensionVersion="0.91.0">
     <Syntaxes>
       <Syntax>Enum.HasFlag method invocation</Syntax>
     </Syntaxes>
   </Refactoring>
-  <Refactoring Id="ReplaceIfElseWithConditionalExpression" Title="Replace if-else with conditional expression" ExtensionVersion="0.99.0">
+  <Refactoring Id="ReplaceIfElseWithAssignment" Title="Replace if-else with assignment" ExtensionVersion="0.99.0">
     <Syntaxes>
-      <Syntax>conditional expression</Syntax>
+      <Syntax>if statement</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="ReplaceIfElseWithSwitch" Title="Replace if-else with switch statement" ExtensionVersion="1.0.8">
+    <Syntaxes>
+      <Syntax>if statement</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="ReplaceIfStatementWithReturnStatement" Title="Replace if statement with return statement" ExtensionVersion="1.1.7">
+    <Syntaxes>
+      <Syntax>if statement</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="ReplaceIncrementOperatorWithDecrementOperator" Title="Replace increment operator with decrement operator" ExtensionVersion="0.9.0">
@@ -788,9 +923,20 @@
       <Syntax>prefix/postfix unary expression</Syntax>
     </Syntaxes>
   </Refactoring>
+  <Refactoring Id="ReplaceInterpolatedStringWithInterpolationExpression" Title="Replace interpolated string with interpolation expression" ExtensionVersion="1.0.9">
+    <Syntaxes>
+      <Syntax>interpolated string with single interpolation and no text</Syntax>
+    </Syntaxes>
+    <Scope>interpolation</Scope>
+  </Refactoring>
   <Refactoring Id="ReplaceInterpolatedStringWithStringLiteral" Title="Replace interpolated string with string literal" ExtensionVersion="0.9.2">
     <Syntaxes>
       <Syntax>Interpolated string without any interpolation</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="ReplaceMethodGroupWithLambda" Title="Replace method group with lambda" ExtensionVersion="1.1.7">
+    <Syntaxes>
+      <Syntax>method group</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="ReplaceMethodInvocationWithElementAccess" Title="Replace method invocation with '[]'" ExtensionVersion="0.9.40">
@@ -804,6 +950,11 @@
       <Syntax>method</Syntax>
     </Syntaxes>
     <Scope>method header</Scope>
+  </Refactoring>
+  <Refactoring Id="ReplaceNullLiteralExpressionWithDefaultExpression" Title="Replace null literal expression with default expression" ExtensionVersion="1.1.6">
+    <Syntaxes>
+      <Syntax>argument</Syntax>
+    </Syntaxes>
   </Refactoring>
   <Refactoring Id="ReplacePrefixOperatorWithPostfixOperator" Title="Replace prefix operator to postfix operator" ExtensionVersion="0.9.0">
     <Syntaxes>
@@ -820,6 +971,17 @@
     <Syntaxes>
       <Syntax>regular string literal</Syntax>
     </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="ReplaceStatementWithIfStatement" Title="Replace statement with if statement" ExtensionVersion="1.1.8">
+    <Syntaxes>
+      <Syntax>return statement</Syntax>
+      <Syntax>yield return statement</Syntax>
+      <Syntax>assignment statement</Syntax>
+      <Syntax>local declaration statement</Syntax>
+    </Syntaxes>
+    <Images>
+      <Image>ReplaceReturnStatementWithIfStatement</Image>
+    </Images>
   </Refactoring>
   <Refactoring Id="ReplaceStringEmptyWithEmptyStringLiteral" Title="Replace 'string.Empty' with &quot;&quot;" ExtensionVersion="0.9.0">
     <Syntaxes>
@@ -872,6 +1034,11 @@
   <Refactoring Id="SplitAttributes" Title="Split attributes" ExtensionVersion="0.9.50">
     <Syntaxes>
       <Syntax>selected attribute list</Syntax>
+    </Syntaxes>
+  </Refactoring>
+  <Refactoring Id="SplitSwitchLabels" Title="Split switch labels" ExtensionVersion="1.1.8">
+    <Syntaxes>
+      <Syntax>selected switch labels</Syntax>
     </Syntaxes>
   </Refactoring>
   <Refactoring Id="SplitVariableDeclaration" Title="Split variable declaration" ExtensionVersion="0.91.0">

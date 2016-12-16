@@ -2,19 +2,21 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Diagnostics;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
+namespace Roslynator.CSharp.DiagnosticAnalyzers
 {
     [DiagnosticAnalyzer(LanguageNames.CSharp)]
     public class FinallyClauseDiagnosticAnalyzer : BaseDiagnosticAnalyzer
     {
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics
-            => ImmutableArray.Create(DiagnosticDescriptors.RemoveEmptyFinallyClause);
+        {
+            get { return ImmutableArray.Create(DiagnosticDescriptors.RemoveEmptyFinallyClause); }
+        }
 
         public override void Initialize(AnalysisContext context)
         {
@@ -31,27 +33,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.DiagnosticAnalyzers
 
             var finallyClause = (FinallyClauseSyntax)context.Node;
 
-            if (finallyClause.Parent?.IsKind(SyntaxKind.TryStatement) == true)
-            {
-                var tryStatement = (TryStatementSyntax)finallyClause.Parent;
-
-                if (tryStatement.Catches.Count > 0)
-                {
-                    BlockSyntax block = finallyClause.Block;
-
-                    if (block != null
-                        && block.Statements.Count == 0
-                        && finallyClause.FinallyKeyword.TrailingTrivia.All(f => f.IsWhitespaceOrEndOfLineTrivia())
-                        && block.OpenBraceToken.LeadingTrivia.All(f => f.IsWhitespaceOrEndOfLineTrivia())
-                        && block.OpenBraceToken.TrailingTrivia.All(f => f.IsWhitespaceOrEndOfLineTrivia())
-                        && block.CloseBraceToken.LeadingTrivia.All(f => f.IsWhitespaceOrEndOfLineTrivia()))
-                    {
-                        context.ReportDiagnostic(
-                            DiagnosticDescriptors.RemoveEmptyFinallyClause,
-                            finallyClause.GetLocation());
-                    }
-                }
-            }
+            RemoveEmptyFinallyClauseRefactoring.Analyze(context, finallyClause);
         }
     }
 }

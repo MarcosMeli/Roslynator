@@ -3,7 +3,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
+namespace Roslynator.CSharp.SyntaxRewriters
 {
     public sealed class TriviaRemover : CSharpSyntaxRewriter
     {
@@ -11,7 +11,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.SyntaxRewriters
 
         public override SyntaxTrivia VisitTrivia(SyntaxTrivia trivia)
         {
-            return CSharpFactory.EmptyWhitespaceTrivia;
+            return CSharpFactory.EmptyWhitespaceTrivia();
         }
     }
 }

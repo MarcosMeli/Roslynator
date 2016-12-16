@@ -7,16 +7,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CodeActions;
 using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Pihrtsoft.CodeAnalysis.CSharp.Refactorings;
+using Roslynator.CSharp.Refactorings;
 
-namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
+namespace Roslynator.CSharp.CodeFixProviders
 {
     [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(VariableDeclarationCodeFixProvider))]
     [Shared]
     public class VariableDeclarationCodeFixProvider : BaseCodeFixProvider
     {
         public sealed override ImmutableArray<string> FixableDiagnosticIds
-            => ImmutableArray.Create(DiagnosticIdentifiers.SplitVariableDeclaration);
+        {
+            get { return ImmutableArray.Create(DiagnosticIdentifiers.SplitVariableDeclaration); }
+        }
 
         public sealed override async Task RegisterCodeFixesAsync(CodeFixContext context)
         {
@@ -28,13 +30,7 @@ namespace Pihrtsoft.CodeAnalysis.CSharp.CodeFixProviders
 
             CodeAction codeAction = CodeAction.Create(
                 SplitVariableDeclarationRefactoring.GetTitle(variableDeclaration),
-                cancellationToken =>
-                {
-                    return SplitVariableDeclarationRefactoring.RefactorAsync(
-                        context.Document,
-                        variableDeclaration,
-                        cancellationToken);
-                },
+                cancellationToken => SplitVariableDeclarationRefactoring.RefactorAsync(context.Document, variableDeclaration, cancellationToken),
                 DiagnosticIdentifiers.SplitVariableDeclaration + EquivalenceKeySuffix);
 
             context.RegisterCodeFix(codeAction, context.Diagnostics);
