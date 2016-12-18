@@ -203,7 +203,7 @@ namespace Roslynator.CSharp.Refactorings
                         {
                             var argument = (ArgumentSyntax)node;
 
-                            if (!argument.RefOrOutKeyword.IsNoneKind())
+                            if (argument.RefOrOutKeyword.IsKind(SyntaxKind.RefKeyword, SyntaxKind.OutKeyword))
                                 return argument.Expression;
 
                             break;
