@@ -66,6 +66,7 @@ namespace Roslynator.VisualStudio
             FormatInitializer = true;
             FormatParameterList = true;
             GenerateBaseConstructors = true;
+            GenerateEnumMember = true;
             GenerateEnumValues = true;
             GenerateOnEventMethod = true;
             GenerateSwitchSections = true;
@@ -239,6 +240,7 @@ namespace Roslynator.VisualStudio
             SetIsEnabled(RefactoringIdentifiers.FormatInitializer, FormatInitializer);
             SetIsEnabled(RefactoringIdentifiers.FormatParameterList, FormatParameterList);
             SetIsEnabled(RefactoringIdentifiers.GenerateBaseConstructors, GenerateBaseConstructors);
+            SetIsEnabled(RefactoringIdentifiers.GenerateEnumMember, GenerateEnumMember);
             SetIsEnabled(RefactoringIdentifiers.GenerateEnumValues, GenerateEnumValues);
             SetIsEnabled(RefactoringIdentifiers.GenerateOnEventMethod, GenerateOnEventMethod);
             SetIsEnabled(RefactoringIdentifiers.GenerateSwitchSections, GenerateSwitchSections);
@@ -891,6 +893,16 @@ namespace Roslynator.VisualStudio
         [Description("Syntax: class declaration\r\nScope: identifier")]
         [TypeConverter(typeof (EnabledDisabledConverter))]
         public bool GenerateBaseConstructors
+        {
+            get;
+            set;
+        }
+
+        [Category(RefactoringCategory)]
+        [DisplayName("Generate enum member")]
+        [Description("Syntax: enum declaration (with FlagsAttribute)")]
+        [TypeConverter(typeof (EnabledDisabledConverter))]
+        public bool GenerateEnumMember
         {
             get;
             set;

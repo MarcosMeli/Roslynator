@@ -101,7 +101,7 @@ namespace Roslynator.CSharp.Refactorings
                     }
                 case SyntaxKind.EnumDeclaration:
                     {
-                        EnumDeclarationRefactoring.ComputeRefactoring(context, (EnumDeclarationSyntax)member);
+                        await EnumDeclarationRefactoring.ComputeRefactoringAsync(context, (EnumDeclarationSyntax)member).ConfigureAwait(false);
                         break;
                     }
                 case SyntaxKind.EnumMemberDeclaration:

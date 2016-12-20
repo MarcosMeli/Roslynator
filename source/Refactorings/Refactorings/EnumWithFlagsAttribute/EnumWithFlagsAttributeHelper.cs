@@ -3,88 +3,51 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
-namespace Roslynator.CSharp.Refactorings
+namespace Roslynator.CSharp.Refactorings.EnumWithFlagsAttribute
 {
-    internal static class GenerateEnumValuesRefactoring
+    internal static class EnumWithFlagsAttributeHelper
     {
-        public static async Task ComputeRefactoringAsync(RefactoringContext context, EnumDeclarationSyntax enumDeclaration)
+        public static bool IsEnumWithFlagsAttribute(ITypeSymbol typeSymbol, SemanticModel semanticModel)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            var enumSymbol = semanticModel.GetDeclaredSymbol(enumDeclaration, context.CancellationToken) as INamedTypeSymbol;
-
-            if (enumSymbol?.IsEnum() == true
-                && enumSymbol
+            return typeSymbol?.IsEnum() == true
+                && typeSymbol
                     .GetAttributes()
-                    .Any(f => f.AttributeClass.Equals(semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute))))
-            {
-                SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
-
-                if (members.Any(f => f.EqualsValue == null))
-                {
-                    context.RegisterRefactoring(
-                        "Generate enum values",
-                        cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, ValueMode.UseAllAvailableValues, cancellationToken: cancellationToken));
-
-                    if (members.Any(f => f.EqualsValue != null))
-                    {
-                        context.RegisterRefactoring(
-                       "Generate enum values (starting from highest explicit value)",
-                       cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, ValueMode.StartFromHighestExplicitValue, cancellationToken));
-                    }
-                }
-            }
+                    .Any(f => f.AttributeClass.Equals(semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute)));
         }
 
-        private static async Task<Document> RefactorAsync(
-            Document document,
+        public static List<object> GetExplicitValues(
             EnumDeclarationSyntax enumDeclaration,
-            INamedTypeSymbol enumSymbol,
-            ValueMode mode,
+            SemanticModel semanticModel,
             CancellationToken cancellationToken)
         {
-            SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
+            var values = new List<object>();
 
-            SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-
-            List<object> values = GetExplicitValues(enumDeclaration, semanticModel, cancellationToken);
-
-            for (int i = 0; i < members.Count; i++)
+            foreach (EnumMemberDeclarationSyntax member in enumDeclaration.Members)
             {
-                if (members[i].EqualsValue == null)
+                EqualsValueClauseSyntax equalsValue = member.EqualsValue;
+
+                if (equalsValue != null)
                 {
-                    object value;
-                    if (TryGetNewValue(values, enumSymbol, mode, out value))
+                    ExpressionSyntax value = equalsValue.Value;
+
+                    if (value != null)
                     {
-                        values.Add(value);
+                        var fieldSymbol = semanticModel.GetDeclaredSymbol(member, cancellationToken) as IFieldSymbol;
 
-                        EqualsValueClauseSyntax equalsValue = EqualsValueClause(CSharpFactory.ConstantExpression(value));
-
-                        EnumMemberDeclarationSyntax newMember = members[i]
-                            .WithEqualsValue(equalsValue)
-                            .WithFormatterAnnotation();
-
-                        members = members.ReplaceAt(i, newMember);
-                    }
-                    else
-                    {
-                        break;
+                        if (fieldSymbol?.HasConstantValue == true)
+                            values.Add(fieldSymbol.ConstantValue);
                     }
                 }
             }
 
-            EnumDeclarationSyntax newNode = enumDeclaration.WithMembers(members);
-
-            return await document.ReplaceNodeAsync(enumDeclaration, newNode, cancellationToken).ConfigureAwait(false);
+            return values;
         }
 
-        private static bool TryGetNewValue(
+        internal static bool TryGetNewValue(
             List<object> values,
             INamedTypeSymbol enumSymbol,
             ValueMode mode,
@@ -134,7 +97,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -182,7 +145,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -230,7 +193,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -278,7 +241,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -326,7 +289,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -374,7 +337,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -422,7 +385,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -470,7 +433,7 @@ namespace Roslynator.CSharp.Refactorings
                                         i *= 2;
                                     }
 
-                                    if (i > 0)
+                                    if (i >= 0)
                                     {
                                         result = i;
                                         return true;
@@ -486,40 +449,6 @@ namespace Roslynator.CSharp.Refactorings
 
             result = null;
             return false;
-        }
-
-        private static List<object> GetExplicitValues(
-            EnumDeclarationSyntax enumDeclaration,
-            SemanticModel semanticModel,
-            CancellationToken cancellationToken)
-        {
-            var values = new List<object>();
-
-            foreach (EnumMemberDeclarationSyntax member in enumDeclaration.Members)
-            {
-                EqualsValueClauseSyntax equalsValue = member.EqualsValue;
-
-                if (equalsValue != null)
-                {
-                    ExpressionSyntax value = equalsValue.Value;
-
-                    if (value != null)
-                    {
-                        var fieldSymbol = semanticModel.GetDeclaredSymbol(member, cancellationToken) as IFieldSymbol;
-
-                        if (fieldSymbol?.HasConstantValue == true)
-                            values.Add(fieldSymbol.ConstantValue);
-                    }
-                }
-            }
-
-            return values;
-        }
-
-        private enum ValueMode
-        {
-            UseAllAvailableValues,
-            StartFromHighestExplicitValue
         }
     }
 }

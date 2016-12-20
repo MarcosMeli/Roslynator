@@ -217,5 +217,13 @@ namespace Roslynator
         {
             return IdentifierGenerator.GenerateIdentifier(typeSymbol, firstCharToLower);
         }
+
+        public static string GenerateUniqueEnumMemberName(INamedTypeSymbol enumSymbol, string baseName)
+        {
+            if (enumSymbol == null)
+                throw new ArgumentNullException(nameof(enumSymbol));
+
+            return EnsureUniqueName(baseName, enumSymbol.MemberNames);
+        }
     }
 }

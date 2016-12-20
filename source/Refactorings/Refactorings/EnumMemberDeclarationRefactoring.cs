@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Roslynator.CSharp.Refactorings.EnumWithFlagsAttribute;
 
 namespace Roslynator.CSharp.Refactorings
 {
@@ -11,14 +12,21 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, EnumMemberDeclarationSyntax enumMemberDeclaration)
         {
-            if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumValues)
-                && enumMemberDeclaration.Span.Contains(context.Span))
+            if (enumMemberDeclaration.Span.Contains(context.Span))
             {
                 SyntaxNode parent = enumMemberDeclaration.Parent;
 
                 if (parent?.IsKind(SyntaxKind.EnumDeclaration) == true)
-                    await GenerateEnumValuesRefactoring.ComputeRefactoringAsync(context, (EnumDeclarationSyntax)parent).ConfigureAwait(false);
+                {
+                    var enumDeclaration = (EnumDeclarationSyntax)parent;
+
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumValues))
+                        await GenerateEnumValuesRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
+
+                    if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember))
+                        await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
+                }
             }
-       }
+        }
     }
 }
