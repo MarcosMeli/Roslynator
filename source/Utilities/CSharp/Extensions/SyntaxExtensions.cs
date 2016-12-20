@@ -1143,6 +1143,14 @@ namespace Roslynator.CSharp
             }
         }
 
+        public static TextSpan BracesSpan(this EnumDeclarationSyntax enumDeclaration)
+        {
+            if (enumDeclaration == null)
+                throw new ArgumentNullException(nameof(enumDeclaration));
+
+            return TextSpan.FromBounds(enumDeclaration.OpenBraceToken.SpanStart, enumDeclaration.CloseBraceToken.Span.End);
+        }
+
         public static TextSpan HeaderSpan(this EventDeclarationSyntax eventDeclaration)
         {
             if (eventDeclaration == null)

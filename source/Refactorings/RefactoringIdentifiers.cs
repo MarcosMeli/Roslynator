@@ -60,6 +60,7 @@ namespace Roslynator.CSharp.Refactorings
         public const string FormatInitializer = "FormatInitializer";
         public const string FormatParameterList = "FormatParameterList";
         public const string GenerateBaseConstructors = "GenerateBaseConstructors";
+        public const string GenerateEnumValues = "GenerateEnumValues";
         public const string GenerateOnEventMethod = "GenerateOnEventMethod";
         public const string GenerateSwitchSections = "GenerateSwitchSections";
         public const string InitializeLocalWithDefaultValue = "InitializeLocalWithDefaultValue";

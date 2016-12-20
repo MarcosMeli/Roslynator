@@ -41,6 +41,9 @@
     <AssemblyOriginatorKeyFile>Roslynator.CSharp.Refactorings.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Refactorings\EnumDeclarationRefactoring.cs" />
+    <Compile Include="Refactorings\EnumMemberDeclarationRefactoring.cs" />
+    <Compile Include="Refactorings\GenerateEnumValuesRefactoring.cs" />
     <Compile Include="Refactorings\MarkContainingClassAsAbstractRefactoring.cs" />
     <Compile Include="Refactorings\MakeMemberVirtualRefactoring.cs" />
     <Compile Include="Refactorings\CastExpressionRefactoring.cs" />
