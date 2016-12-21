@@ -12,7 +12,7 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, EnumMemberDeclarationSyntax enumMemberDeclaration)
         {
-            if (enumMemberDeclaration.Span.Contains(context.Span))
+            if (context.Span.IsEmptyAndContainedInSpan(enumMemberDeclaration))
             {
                 SyntaxNode parent = enumMemberDeclaration.Parent;
 

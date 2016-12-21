@@ -2,9 +2,9 @@
 
 namespace Roslynator.CSharp.Refactorings.EnumWithFlagsAttribute
 {
-    internal enum ValueMode
+    internal enum FlagsGenerationMode
     {
-        UseAllAvailableValues,
-        StartFromHighestExplicitValue
+        None,
+        FromHighestExistingValue
     }
 }

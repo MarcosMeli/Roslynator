@@ -4,15 +4,16 @@ using System;
 
 namespace Roslynator.CSharp.Analyzers.Tests
 {
-    public static class GenerateEnumMember
+    public static class GenerateCombinedEnumMember
     {
-        private enum Foo
-        {
-        }
-
         [Flags]
-        private enum Foo2
+        private enum Foo : sbyte
         {
+            None = 0,
+            Alpha = 1,
+            Beta = 2,
+            Gamma = 4,
+            Delta = 8,
         }
     }
 }

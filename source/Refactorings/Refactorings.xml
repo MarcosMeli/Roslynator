@@ -364,6 +364,11 @@
     </Syntaxes>
     <Scope>identifier</Scope>
   </Refactoring>
+  <Refactoring Id="GenerateCombinedEnumMember" Title="Generate combined enum member" ExtensionVersion="0.0.0">
+    <Syntaxes>
+      <Syntax>enum declaration (with FlagsAttribute)</Syntax>
+    </Syntaxes>
+  </Refactoring>
   <Refactoring Id="GenerateEnumMember" Title="Generate enum member" ExtensionVersion="0.0.0">
     <Syntaxes>
       <Syntax>enum declaration (with FlagsAttribute)</Syntax>

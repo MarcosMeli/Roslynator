@@ -318,6 +318,9 @@
             <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#generate-base-constructors">Generate base constructors</a>
         </li>
         <li>
+            <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#generate-combined-enum-member">Generate combined enum member</a>
+        </li>
+        <li>
             <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#generate-enum-member">Generate enum member</a>
         </li>
         <li>

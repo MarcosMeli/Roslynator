@@ -12,7 +12,14 @@ namespace Roslynator.CSharp.Refactorings
         {
             ExtractTypeDeclarationToNewFileRefactoring.ComputeRefactorings(context, enumDeclaration);
 
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateCombinedEnumMember)
+                && enumDeclaration.BracesSpan().Contains(context.Span))
+            {
+                await GenerateCombinedEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);
+            }
+
             if (context.IsRefactoringEnabled(RefactoringIdentifiers.GenerateEnumMember)
+                && context.Span.IsEmpty
                 && enumDeclaration.BracesSpan().Contains(context.Span))
             {
                 await GenerateEnumMemberRefactoring.ComputeRefactoringAsync(context, enumDeclaration).ConfigureAwait(false);

@@ -19,21 +19,36 @@ namespace Roslynator.CSharp.Refactorings.EnumWithFlagsAttribute
 
             var enumSymbol = semanticModel.GetDeclaredSymbol(enumDeclaration, context.CancellationToken) as INamedTypeSymbol;
 
-            if (EnumWithFlagsAttributeHelper.IsEnumWithFlagsAttribute(enumSymbol, semanticModel))
+            if (SymbolAnalyzer.IsEnumWithFlagsAttribute(enumSymbol, semanticModel))
             {
                 SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
 
                 if (members.Any(f => f.EqualsValue == null))
                 {
-                    context.RegisterRefactoring(
-                        "Generate enum values",
-                        cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, ValueMode.UseAllAvailableValues, cancellationToken: cancellationToken));
+                    SpecialType specialType = enumSymbol.EnumUnderlyingType.SpecialType;
 
-                    if (members.Any(f => f.EqualsValue != null))
+                    List<object> values = EnumHelper.GetExplicitValues(enumDeclaration, semanticModel, context.CancellationToken);
+
+                    Optional<object> optional = FlagsGenerator.GetNewValue(specialType, values);
+
+                    if (optional.HasValue)
                     {
                         context.RegisterRefactoring(
-                       "Generate enum values (starting from highest explicit value)",
-                       cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, ValueMode.StartFromHighestExplicitValue, cancellationToken));
+                            "Generate enum values",
+                            cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, FlagsGenerationMode.None, cancellationToken));
+
+                        if (members.Any(f => f.EqualsValue != null))
+                        {
+                            Optional<object> optional2 = FlagsGenerator.GetNewValue(specialType, values, FlagsGenerationMode.FromHighestExistingValue);
+
+                            if (optional2.HasValue
+                                && !optional.Value.Equals(optional2.Value))
+                            {
+                                context.RegisterRefactoring(
+                                    $"Generate enum values (starting from {optional2.Value})",
+                                    cancellationToken => RefactorAsync(context.Document, enumDeclaration, enumSymbol, FlagsGenerationMode.FromHighestExistingValue, cancellationToken));
+                            }
+                        }
                     }
                 }
             }
@@ -43,25 +58,28 @@ namespace Roslynator.CSharp.Refactorings.EnumWithFlagsAttribute
             Document document,
             EnumDeclarationSyntax enumDeclaration,
             INamedTypeSymbol enumSymbol,
-            ValueMode mode,
+            FlagsGenerationMode mode,
             CancellationToken cancellationToken)
         {
             SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
 
             SemanticModel semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
 
-            List<object> values = EnumWithFlagsAttributeHelper.GetExplicitValues(enumDeclaration, semanticModel, cancellationToken);
+            SpecialType specialType = enumSymbol.EnumUnderlyingType.SpecialType;
+
+            List<object> values = EnumHelper.GetExplicitValues(enumDeclaration, semanticModel, cancellationToken);
 
             for (int i = 0; i < members.Count; i++)
             {
                 if (members[i].EqualsValue == null)
                 {
-                    object value;
-                    if (EnumWithFlagsAttributeHelper.TryGetNewValue(values, enumSymbol, mode, out value))
-                    {
-                        values.Add(value);
+                    Optional<object> optional = FlagsGenerator.GetNewValue(specialType, values, mode);
 
-                        EqualsValueClauseSyntax equalsValue = EqualsValueClause(CSharpFactory.ConstantExpression(value));
+                    if (optional.HasValue)
+                    {
+                        values.Add(optional.Value);
+
+                        EqualsValueClauseSyntax equalsValue = EqualsValueClause(CSharpFactory.ConstantExpression(optional.Value));
 
                         EnumMemberDeclarationSyntax newMember = members[i]
                             .WithEqualsValue(equalsValue)

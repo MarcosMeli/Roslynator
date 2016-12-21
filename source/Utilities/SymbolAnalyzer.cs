@@ -9,6 +9,20 @@ namespace Roslynator
 {
     public static class SymbolAnalyzer
     {
+        public static bool IsEnumWithFlagsAttribute(ITypeSymbol typeSymbol, SemanticModel semanticModel)
+        {
+            if (typeSymbol == null)
+                throw new ArgumentNullException(nameof(typeSymbol));
+
+            if (semanticModel == null)
+                throw new ArgumentNullException(nameof(semanticModel));
+
+            return typeSymbol.IsEnum()
+                && typeSymbol
+                    .GetAttributes()
+                    .Any(f => f.AttributeClass.Equals(semanticModel.Compilation.GetTypeByMetadataName(MetadataNames.System_FlagsAttribute)));
+        }
+
         public static bool IsEnumerableMethod(
             IMethodSymbol methodSymbol,
             string methodName,
