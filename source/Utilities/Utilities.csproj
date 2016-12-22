@@ -43,9 +43,12 @@
     <Compile Include="AsyncMethodNameGenerator.cs" />
     <Compile Include="CSharp\BracesAnalysisResult.cs" />
     <Compile Include="CSharp\CSharpErrorCodes.cs" />
+    <Compile Include="CSharp\EnumMemberDeclarationComparer.cs" />
+    <Compile Include="CSharp\EnumMemberValueComparer.cs" />
     <Compile Include="CSharp\Extensions\CSharpExtensions.cs" />
     <Compile Include="CSharp\CSharpGeneratedCodeAnalyzer.cs" />
     <Compile Include="CSharp\Internal\LogicalNegationHelper.cs" />
+    <Compile Include="CSharp\MemberDeclarationSortMode.cs" />
     <Compile Include="CSharp\ModifierInserter.cs" />
     <Compile Include="CSharp\Refactorings\AddBracesToSwitchSectionRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\InsertModifierRefactoring.cs" />
@@ -55,6 +58,7 @@
     <Compile Include="CSharp\Refactorings\MergeInterpolationIntoInterpolatedStringRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\RemoveCommentRefactoring.cs" />
     <Compile Include="CSharp\Refactorings\ReplaceHasFlagWithBitwiseOperationRefactoring.cs" />
+    <Compile Include="CSharp\SelectedMemberDeclarationsInfo.cs" />
     <Compile Include="CSharp\SwitchSectionStatementContainer.cs" />
     <Compile Include="CSharp\AccessModifier.cs" />
     <Compile Include="CommentRemoveOptions.cs" />
