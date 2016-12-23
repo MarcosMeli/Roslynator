@@ -11,15 +11,18 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, ExpressionSyntax expression)
         {
-            SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
-
-            Optional<object> optional = semanticModel.GetConstantValue(expression, context.CancellationToken);
-
-            if (optional.HasValue)
+            if (!(expression is LiteralExpressionSyntax))
             {
-                context.RegisterRefactoring(
-                    "Replace with constant value",
-                    cancellationToken => RefactorAsync(context.Document, expression, optional.Value, cancellationToken));
+                SemanticModel semanticModel = await context.GetSemanticModelAsync().ConfigureAwait(false);
+
+                Optional<object> optional = semanticModel.GetConstantValue(expression, context.CancellationToken);
+
+                if (optional.HasValue)
+                {
+                    context.RegisterRefactoring(
+                        "Replace with constant value",
+                        cancellationToken => RefactorAsync(context.Document, expression, optional.Value, cancellationToken));
+                }
             }
         }
 
