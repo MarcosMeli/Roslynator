@@ -615,6 +615,9 @@
             <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#replace-while-statement-with-do-statement">Replace while statement with do statement</a>
         </li>
         <li>
+            <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#replace-while-statement-with-for-statement">Replace while statement with for statement</a>
+        </li>
+        <li>
             <a href="http://github.com/JosefPihrt/Roslynator/blob/master/source/Refactorings/README.md#reverse-for-loop">Reverse for loop</a>
         </li>
         <li>

@@ -15,11 +15,17 @@ namespace Roslynator.CSharp.Refactorings
                     "Replace while with do",
                     cancellationToken =>
                     {
-                        return ReplaceWhileStatementWithDoStatementRefactoring.RefactorAsync(
+                        return ReplaceWhileWithDoRefactoring.RefactorAsync(
                             context.Document,
                             whileStatement,
                             cancellationToken);
                     });
+            }
+
+            if (context.IsRefactoringEnabled(RefactoringIdentifiers.ReplaceWhileWithFor)
+                && context.Span.IsBetweenSpans(whileStatement))
+            {
+                ReplaceWhileWithForRefactoring.ComputeRefactoring(context, whileStatement);
             }
         }
     }

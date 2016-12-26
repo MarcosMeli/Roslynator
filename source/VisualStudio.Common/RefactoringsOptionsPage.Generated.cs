@@ -165,6 +165,7 @@ namespace Roslynator.VisualStudio
             ReplaceVerbatimStringLiteralWithRegularStringLiteral = true;
             ReplaceVerbatimStringLiteralWithRegularStringLiterals = true;
             ReplaceWhileStatementWithDoStatement = true;
+            ReplaceWhileWithFor = true;
             ReverseForLoop = true;
             SimplifyLambdaExpression = true;
             SplitAttributes = true;
@@ -338,6 +339,7 @@ namespace Roslynator.VisualStudio
             SetIsEnabled(RefactoringIdentifiers.ReplaceVerbatimStringLiteralWithRegularStringLiteral, ReplaceVerbatimStringLiteralWithRegularStringLiteral);
             SetIsEnabled(RefactoringIdentifiers.ReplaceVerbatimStringLiteralWithRegularStringLiterals, ReplaceVerbatimStringLiteralWithRegularStringLiterals);
             SetIsEnabled(RefactoringIdentifiers.ReplaceWhileStatementWithDoStatement, ReplaceWhileStatementWithDoStatement);
+            SetIsEnabled(RefactoringIdentifiers.ReplaceWhileWithFor, ReplaceWhileWithFor);
             SetIsEnabled(RefactoringIdentifiers.ReverseForLoop, ReverseForLoop);
             SetIsEnabled(RefactoringIdentifiers.SimplifyLambdaExpression, SimplifyLambdaExpression);
             SetIsEnabled(RefactoringIdentifiers.SplitAttributes, SplitAttributes);
@@ -1881,6 +1883,16 @@ namespace Roslynator.VisualStudio
         [Description("Syntax: while statement\r\nScope: while keyword")]
         [TypeConverter(typeof (EnabledDisabledConverter))]
         public bool ReplaceWhileStatementWithDoStatement
+        {
+            get;
+            set;
+        }
+
+        [Category(RefactoringCategory)]
+        [DisplayName("Replace while statement with for statement")]
+        [Description("Syntax: while statement")]
+        [TypeConverter(typeof (EnabledDisabledConverter))]
+        public bool ReplaceWhileWithFor
         {
             get;
             set;
