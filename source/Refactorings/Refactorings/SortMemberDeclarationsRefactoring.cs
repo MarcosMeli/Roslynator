@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,8 +13,6 @@ namespace Roslynator.CSharp.Refactorings
 {
     internal static class SortMemberDeclarationsRefactoring
     {
-        private const string Title = "Sort members";
-
         public static void ComputeRefactoring(RefactoringContext context, NamespaceDeclarationSyntax namespaceDeclaration)
         {
             SelectedMemberDeclarationsInfo info = SelectedMemberDeclarationsInfo.Create(namespaceDeclaration, context.Span);
@@ -46,50 +45,63 @@ namespace Roslynator.CSharp.Refactorings
         {
             if (info.AreManySelected)
             {
-                List<MemberDeclarationSyntax> selectedMembers = info.SelectedNodes().ToList();
+                ImmutableArray<MemberDeclarationSyntax> selectedMembers = info.SelectedNodes().ToImmutableArray();
 
-                SyntaxKind kind = GetSingleOrNoneKind(selectedMembers);
+                SyntaxKind kind = GetSingleKindOrDefault(selectedMembers);
 
                 if (kind != SyntaxKind.None)
                 {
-                    var sortMode = MemberDeclarationSortMode.ByKindThenAlphabetically;
-
-                    if (MemberDeclarationComparer.CanBeSortedAlphabetically(kind)
-                        && !MemberDeclarationComparer.IsListSorted(selectedMembers, sortMode))
+                    if (MemberDeclarationComparer.CanBeSortedAlphabetically(kind))
                     {
-                        context.RegisterRefactoring(
-                            Title,
-                            cancellationToken => RefactorAsync(context.Document, info, selectedMembers, sortMode, cancellationToken));
+                        ComputeRefactoring(
+                            context,
+                            MemberDeclarationSortMode.ByKindThenByName,
+                            "Sort members by name",
+                            info,
+                            selectedMembers);
                     }
                 }
                 else
                 {
-                    var sortMode = MemberDeclarationSortMode.ByKind;
+                    ComputeRefactoring(
+                        context,
+                        MemberDeclarationSortMode.ByKind,
+                        "Sort members by kind",
+                        info,
+                        selectedMembers);
 
-                    if (!MemberDeclarationComparer.IsListSorted(selectedMembers, sortMode))
-                    {
-                        context.RegisterRefactoring(
-                            Title,
-                            cancellationToken => RefactorAsync(context.Document, info, selectedMembers, sortMode, cancellationToken));
-                    }
+                    ComputeRefactoring(
+                        context,
+                        MemberDeclarationSortMode.ByKindThenByName,
+                        "Sort members by kind then by name",
+                        info,
+                        selectedMembers);
                 }
+            }
+        }
+
+        private static void ComputeRefactoring(RefactoringContext context, MemberDeclarationSortMode sortMode, string title, SelectedMemberDeclarationsInfo info, ImmutableArray<MemberDeclarationSyntax> selectedMembers)
+        {
+            if (!MemberDeclarationComparer.IsListSorted(selectedMembers, sortMode))
+            {
+                context.RegisterRefactoring(
+                    title,
+                    cancellationToken => RefactorAsync(context.Document, info, selectedMembers, sortMode, cancellationToken));
             }
         }
 
         private static async Task<Document> RefactorAsync(
             Document document,
             SelectedMemberDeclarationsInfo info,
-            List<MemberDeclarationSyntax> selectedMembers,
+            ImmutableArray<MemberDeclarationSyntax> selectedMembers,
             MemberDeclarationSortMode sortMode,
             CancellationToken cancellationToken)
         {
             var comparer = new MemberDeclarationComparer(sortMode);
 
-            selectedMembers.Sort(comparer);
-
             IEnumerable<MemberDeclarationSyntax> newMembers = info.Nodes
                 .Take(info.FirstSelectedNodeIndex)
-                .Concat(selectedMembers)
+                .Concat(selectedMembers.OrderBy(f => f, comparer))
                 .Concat(info.Nodes.Skip(info.LastSelectedNodeIndex + 1));
 
             MemberDeclarationSyntax newNode = info.ParentMember.SetMembers(SyntaxFactory.List(newMembers));
@@ -97,22 +109,14 @@ namespace Roslynator.CSharp.Refactorings
             return await document.ReplaceNodeAsync(info.ParentMember, newNode, cancellationToken).ConfigureAwait(false);
         }
 
-        private static SyntaxKind GetSingleOrNoneKind(List<MemberDeclarationSyntax> members)
+        private static SyntaxKind GetSingleKindOrDefault(ImmutableArray<MemberDeclarationSyntax> members)
         {
-            var kind = SyntaxKind.None;
+            SyntaxKind kind = members.First().Kind();
 
-            using (List<MemberDeclarationSyntax>.Enumerator en = members.GetEnumerator())
+            for (int i = 1; i < members.Length; i++)
             {
-                if (en.MoveNext())
-                {
-                    kind = en.Current.Kind();
-
-                    while (en.MoveNext())
-                    {
-                        if (en.Current.Kind() != kind)
-                            return SyntaxKind.None;
-                    }
-                }
+                if (members[i].Kind() != kind)
+                    return SyntaxKind.None;
             }
 
             return kind;

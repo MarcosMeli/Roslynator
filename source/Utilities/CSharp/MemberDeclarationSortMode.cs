@@ -5,6 +5,6 @@ namespace Roslynator.CSharp
     public enum MemberDeclarationSortMode
     {
         ByKind,
-        ByKindThenAlphabetically
+        ByKindThenByName
     }
 }

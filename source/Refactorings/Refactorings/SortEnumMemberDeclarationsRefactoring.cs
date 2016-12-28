@@ -1,6 +1,8 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,12 +16,12 @@ namespace Roslynator.CSharp.Refactorings
     {
         public static async Task ComputeRefactoringAsync(RefactoringContext context, EnumDeclarationSyntax enumDeclaration)
         {
-            List<EnumMemberDeclarationSyntax> selectedMembers = enumDeclaration.Members
+            ImmutableArray<EnumMemberDeclarationSyntax> selectedMembers = enumDeclaration.Members
                 .SkipWhile(f => context.Span.Start > f.Span.Start)
                 .TakeWhile(f => context.Span.End >= f.Span.End)
-                .ToList();
+                .ToImmutableArray();
 
-            if (selectedMembers.Count > 1)
+            if (selectedMembers.Length > 1)
             {
                 if (!EnumMemberDeclarationComparer.IsListSorted(selectedMembers))
                 {
@@ -38,7 +40,7 @@ namespace Roslynator.CSharp.Refactorings
                         .Select(f => f.ConstantValue)
                         .ToList();
 
-                    if (selectedMembers.Count == values.Count
+                    if (selectedMembers.Length == values.Count
                         && !EnumMemberValueComparer.IsListSorted(values))
                     {
                         context.RegisterRefactoring(
@@ -52,21 +54,19 @@ namespace Roslynator.CSharp.Refactorings
         private static async Task<Document> SortByNameAsync(
             Document document,
             EnumDeclarationSyntax enumDeclaration,
-            List<EnumMemberDeclarationSyntax> selectedMembers,
+            ImmutableArray<EnumMemberDeclarationSyntax> selectedMembers,
             CancellationToken cancellationToken)
         {
             var comparer = new EnumMemberDeclarationComparer();
 
-            selectedMembers.Sort(comparer);
-
             SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
 
             int firstIndex = members.IndexOf(selectedMembers[0]);
-            int lastIndex = members.IndexOf(selectedMembers[selectedMembers.Count - 1]);
+            int lastIndex = members.IndexOf(selectedMembers[selectedMembers.Length - 1]);
 
             IEnumerable<EnumMemberDeclarationSyntax> newMembers = members
                 .Take(firstIndex)
-                .Concat(selectedMembers)
+                .Concat(selectedMembers.OrderBy(f => f, comparer))
                 .Concat(members.Skip(lastIndex + 1));
 
             MemberDeclarationSyntax newNode = enumDeclaration.WithMembers(SyntaxFactory.SeparatedList(newMembers));
@@ -77,25 +77,25 @@ namespace Roslynator.CSharp.Refactorings
         private static async Task<Document> SortByValueAsync(
             Document document,
             EnumDeclarationSyntax enumDeclaration,
-            List<EnumMemberDeclarationSyntax> selectedMembers,
+            ImmutableArray<EnumMemberDeclarationSyntax> selectedMembers,
             List<object> values,
             CancellationToken cancellationToken)
         {
             var comparer = new EnumMemberValueComparer();
 
-            var dic = new SortedDictionary<object, EnumMemberDeclarationSyntax>(comparer);
-
-            for (int i = 0; i < values.Count; i++)
-                dic.Add(values[i], selectedMembers[i]);
-
             SeparatedSyntaxList<EnumMemberDeclarationSyntax> members = enumDeclaration.Members;
 
             int firstIndex = members.IndexOf(selectedMembers[0]);
-            int lastIndex = members.IndexOf(selectedMembers[selectedMembers.Count - 1]);
+            int lastIndex = members.IndexOf(selectedMembers[selectedMembers.Length - 1]);
+
+            IEnumerable<EnumMemberDeclarationSyntax> sorted = selectedMembers
+                .Zip(values, (f, g) => new { EnumMember = f, Value = g })
+                .OrderBy(f => f.Value, comparer)
+                .Select(f => f.EnumMember);
 
             IEnumerable<EnumMemberDeclarationSyntax> newMembers = members
                 .Take(firstIndex)
-                .Concat(dic.Values)
+                .Concat(sorted)
                 .Concat(members.Skip(lastIndex + 1));
 
             MemberDeclarationSyntax newNode = enumDeclaration.WithMembers(SyntaxFactory.SeparatedList(newMembers));

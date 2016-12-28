@@ -9,7 +9,7 @@ namespace Roslynator.CSharp
     {
         public int Compare(object x, object y)
         {
-            throw new NotImplementedException();
+            return ComparePrivate(x, y);
         }
 
         private static int ComparePrivate(object x, object y)

@@ -1041,6 +1041,12 @@
       <Syntax>enum declarations</Syntax>
     </Syntaxes>
     <Scope>selected member declarations</Scope>
+    <Images>
+      <Image>SortMembersByKind</Image>
+      <Image>SortMembersByName</Image>
+      <Image>SortEnumMembersByName</Image>
+      <Image>SortEnumMembersByValue</Image>
+    </Images>
   </Refactoring>
   <Refactoring Id="SplitAttributes" Title="Split attributes" ExtensionVersion="0.9.50">
     <Syntaxes>

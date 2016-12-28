@@ -35,22 +35,16 @@ namespace Roslynator.CSharp
             if (y == null)
                 return 1;
 
-            if (sortMode == MemberDeclarationSortMode.ByKindThenAlphabetically)
-            {
-                int result = GetOrderIndex(x).CompareTo(GetOrderIndex(y));
+            int result = GetOrderIndex(x).CompareTo(GetOrderIndex(y));
 
-                if (result != 0)
-                {
-                    return result;
-                }
-                else
-                {
-                    return string.Compare(GetName(x), GetName(y), StringComparison.CurrentCulture);
-                }
+            if (sortMode == MemberDeclarationSortMode.ByKindThenByName
+                && result == 0)
+            {
+                return string.Compare(GetName(x), GetName(y), StringComparison.CurrentCulture);
             }
             else
             {
-                return GetOrderIndex(x).CompareTo(GetOrderIndex(y));
+                return result;
             }
         }
 
