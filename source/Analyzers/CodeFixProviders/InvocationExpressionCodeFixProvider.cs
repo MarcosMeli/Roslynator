@@ -1,6 +1,5 @@
 ﻿// Copyright (c) Josef Pihrt. All rights reserved. Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
 using System.Collections.Immutable;
 using System.Composition;
 using System.Threading.Tasks;
@@ -31,7 +30,8 @@ namespace Roslynator.CSharp.CodeFixProviders
                     DiagnosticIdentifiers.RemoveRedundantToStringCall,
                     DiagnosticIdentifiers.RemoveRedundantStringToCharArrayCall,
                     DiagnosticIdentifiers.UseCastMethodInsteadOfSelectMethod,
-                    DiagnosticIdentifiers.CombineEnumerableWhereMethodChain);
+                    DiagnosticIdentifiers.CombineEnumerableWhereMethodChain,
+                    DiagnosticIdentifiers.CallFindMethodInsteadOrFirstOrDefaultMethod);
             }
         }
 
@@ -145,6 +145,16 @@ namespace Roslynator.CSharp.CodeFixProviders
                             CodeAction codeAction = CodeAction.Create(
                                 "Remove redundant 'ToCharArray' call",
                                 cancellationToken => RemoveRedundantCallRefactoring.RefactorAsync(context.Document, invocation, cancellationToken),
+                                diagnostic.Id + EquivalenceKeySuffix);
+
+                            context.RegisterCodeFix(codeAction, diagnostic);
+                            break;
+                        }
+                    case DiagnosticIdentifiers.CallFindMethodInsteadOrFirstOrDefaultMethod:
+                        {
+                            CodeAction codeAction = CodeAction.Create(
+                                "Call 'Find' instead of 'FirstOrDefault'",
+                                cancellationToken => CallFindMethodInsteadOrFirstOrDefaultMethodRefactoring.RefactorAsync(context.Document, invocation, cancellationToken),
                                 diagnostic.Id + EquivalenceKeySuffix);
 
                             context.RegisterCodeFix(codeAction, diagnostic);

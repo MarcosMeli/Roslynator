@@ -1082,5 +1082,14 @@ namespace Roslynator.CSharp
         );
 
         public static readonly DiagnosticDescriptor RemoveRedundantDelegateCreationFadeOut = RemoveRedundantDelegateCreation.CreateFadeOut();
+
+        public static readonly DiagnosticDescriptor CallFindMethodInsteadOrFirstOrDefaultMethod = new DiagnosticDescriptor(
+            id: DiagnosticIdentifiers.CallFindMethodInsteadOrFirstOrDefaultMethod,
+            title: "Call 'Find' method instead of 'FirstOrDefault' method.",
+            messageFormat: "Call 'Find' method instead of 'FirstOrDefault' method.",
+            category: DiagnosticCategories.Performance,
+            defaultSeverity: DiagnosticSeverity.Info,
+            isEnabledByDefault: true
+        );
     }
 }

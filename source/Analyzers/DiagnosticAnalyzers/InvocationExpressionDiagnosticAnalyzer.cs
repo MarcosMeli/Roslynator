@@ -29,7 +29,8 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
                     DiagnosticDescriptors.RemoveRedundantStringToCharArrayCall,
                     DiagnosticDescriptors.UseCastMethodInsteadOfSelectMethod,
                     DiagnosticDescriptors.CombineEnumerableWhereMethodChain,
-                    DiagnosticDescriptors.CombineEnumerableWhereMethodChainFadeOut);
+                    DiagnosticDescriptors.CombineEnumerableWhereMethodChainFadeOut,
+                    DiagnosticDescriptors.CallFindMethodInsteadOrFirstOrDefaultMethod);
             }
         }
 
@@ -99,6 +100,11 @@ namespace Roslynator.CSharp.DiagnosticAnalyzers
                     {
                         switch (methodName)
                         {
+                            case "FirstOrDefault":
+                                {
+                                    CallFindMethodInsteadOrFirstOrDefaultMethodRefactoring.Analyze(context, invocation, memberAccess);
+                                    break;
+                                }
                             case "Select":
                                 {
                                     ReplaceSelectWithCastRefactoring.Analyze(context, invocation, memberAccess);

@@ -45,6 +45,7 @@
     <Compile Include="AddEmptyLineAfterLastStatementInDoStatement.cs" />
     <Compile Include="AsynchronousMethodNameShouldEndWithAsync.cs" />
     <Compile Include="AvoidUsageOfWhileStatementToCreateInfiniteLoop.cs" />
+    <Compile Include="CallFindInsteadOfFirstOrDefault.cs" />
     <Compile Include="CombineEnumerableWhereMethodChain.cs" />
     <Compile Include="DeclareTypeInsideNamespace.cs" />
     <Compile Include="AvoidUsageOfForStatementToCreateInfiniteLoop.cs" />
